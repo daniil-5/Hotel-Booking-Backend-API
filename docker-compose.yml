@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: pg_container
+    restart: always
+    environment:
+      POSTGRES_USER: my_user          
+      POSTGRES_PASSWORD: 1111  
+      POSTGRES_DB: Booking_db   
+    ports:
+      - "5433:5432" 
+    volumes:
+      - pg_data:/var/lib/postgresql/data 
+
+  adminer:  
+    image: adminer:latest
+    container_name: adminer_container
+    restart: always
+    ports:
+      - "8080:8080"  
+
+volumes:
+  pg_data:
