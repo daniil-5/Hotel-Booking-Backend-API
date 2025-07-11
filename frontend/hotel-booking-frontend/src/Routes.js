@@ -1,29 +1,3 @@
-// import React from 'react';
-// import { Routes as RouterRoutes, Route } from 'react-router-dom';
-// import Login from './pages/Login';
-// import Register from './pages/Register';
-// import Home from './pages/Home';
-// import Dashboard from './pages/Dashboard';
-// import CreateHotel from './pages/CreateHotel'; 
-// import ManageBookings from './pages/ManageBookings';  
-// import ManagePhotos from './pages/ManagePhotos';
-
-
-// const Routes = () => {
-//   return (
-//     <RouterRoutes>
-//       <Route path="/" element={<Home />} />
-//       <Route path="/login" element={<Login />} />
-//       <Route path="/register" element={<Register />} />
-//       <Route path="/dashboard" element={<Dashboard />} />
-//       <Route path="/hotels/create" element={<CreateHotel />} />
-//       <Route path="/bookings/manage" element={<ManageBookings />} />
-//       <Route path="/photos/manage" element={<ManagePhotos />} />
-  
-//     </RouterRoutes>
-//   );
-// };
-
 import React from 'react';
 import { Routes as RouterRoutes, Route } from 'react-router-dom';
 import Login from './pages/Login';
