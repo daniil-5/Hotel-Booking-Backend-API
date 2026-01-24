@@ -1,0 +1,37 @@
+name: .NET Lint and Test
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout the code
+      - uses: actions/checkout@v4
+      
+      # 2. Setup .NET SDK
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x 
+      
+      # 3. Restore dependencies
+      - name: Restore dependencies
+        run: dotnet restore
+      
+      # 4. Lint Code (Check for formatting issues)
+      - name: Verify Code Formatting
+        run: dotnet format --verify-no-changes --severity warn
+      
+      # 5. Build the project
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+      
+      # 6. Run Tests
+      - name: Test
+        run: dotnet test --no-build --configuration Release --verbosity normal
