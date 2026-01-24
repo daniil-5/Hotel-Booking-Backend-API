@@ -264,9 +264,9 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var dbContext = services.GetRequiredService<AppDbContext>();
-        
+
         dbContext.Database.Migrate();
-        
+
         if (app.Environment.IsDevelopment())
         {
             var seeder = services.GetRequiredService<DatabaseSeeder>();
