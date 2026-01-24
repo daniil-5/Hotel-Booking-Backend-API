@@ -144,21 +144,19 @@ builder.Services.AddScoped<ICacheService, RedisCacheService>();
 builder.Services.AddScoped<IRepository<Booking>, BaseRepository<Booking>>();
 builder.Services.AddScoped<IHotelRepository, HotelRepository>();
 builder.Services.AddScoped<IRepository<RoomType>, BaseRepository<RoomType>>();
-builder.Services.AddScoped<IRepository<Room>, BaseRepository<Room>>();
 builder.Services.AddScoped<IRepository<RoomPricing>, BaseRepository<RoomPricing>>();
 builder.Services.AddScoped<IRepository<HotelPhoto>, BaseRepository<HotelPhoto>>();
+builder.Services.AddScoped<IRepository<Amenity>, BaseRepository<Amenity>>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 #endregion
 
 #region Services and Decorators
 
-// Register main services for use inside decorators
 builder.Services.AddScoped<BookingService>();
 builder.Services.AddScoped<HotelService>();
 builder.Services.AddScoped<UserService>();
 
-// Use cached decorator implementations instead of standard services
 builder.Services.AddScoped<IBookingService>(provider =>
     new CachedBookingService(
         provider.GetRequiredService<BookingService>(),
@@ -171,13 +169,6 @@ builder.Services.AddScoped<IHotelService>(provider =>
         provider.GetRequiredService<HotelService>(),
         provider.GetRequiredService<ICacheService>(),
         provider.GetRequiredService<ILogger<CachedHotelService>>())
-);
-
-builder.Services.AddScoped<IRoomService>(provider =>
-    new CachedRoomService(
-        provider.GetRequiredService<RoomService>(),
-        provider.GetRequiredService<ICacheService>(),
-        provider.GetRequiredService<ILogger<CachedRoomService>>())
 );
 
 builder.Services.AddScoped<IUserService>(provider =>
@@ -197,7 +188,6 @@ builder.Services.AddScoped<ISerializationService, SerializationService>();
 
 #region Cloudinary
 
-// Cloudinary configuration and repository
 builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection("CloudinarySettings"));
 builder.Services.AddScoped<IPhotoRepository>(provider =>
 {
@@ -211,7 +201,6 @@ builder.Services.AddScoped<IHotelPhotoService, HotelPhotoService>();
 
 #region CORS
 
-// Configure CORS for allowed origins
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowSpecificOrigin", policyBuilder =>
@@ -231,7 +220,6 @@ builder.Services.AddCors(options =>
 
 #region JWT
 
-// Configure JWT authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -245,8 +233,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateLifetime = true,
             ClockSkew = TimeSpan.Zero
         };
-
-        // Extract token from cookie or Authorization header
+        
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
@@ -285,8 +272,7 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-
-    // Automatically seed database with initial data
+    
     using (var scope = app.Services.CreateScope())
     {
         var services = scope.ServiceProvider;
@@ -309,6 +295,7 @@ if (app.Environment.IsDevelopment())
 
 #region Middleware
 
+app.UseSerilogRequestLogging(); 
 app.UseHttpsRedirection();
 app.UseCors("AllowSpecificOrigin");
 app.UseAuthentication();
