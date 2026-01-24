@@ -1,4 +1,4 @@
-using BookingSystem.Application.RoomType;
+using BookingSystem.Application.DTOs.RoomType;
 
 namespace BookingSystem.Application.Interfaces;
 

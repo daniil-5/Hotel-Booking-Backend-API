@@ -1,5 +1,6 @@
 using BookingSystem.Application.DTOs.HotelPhoto;
 using BookingSystem.Application.Interfaces;
+using BookingSystem.Application.Mappers;
 using BookingSystem.Domain.Entities;
 using BookingSystem.Domain.Interfaces;
 using Microsoft.AspNetCore.Http;
@@ -21,17 +22,9 @@ public class HotelPhotoService : IHotelPhotoService
 
     public async Task<HotelPhotoDto> CreateHotelPhotoAsync(CreateHotelPhotoDto photoDto)
     {
-        var hotelPhoto = new HotelPhoto
-        {
-            HotelId = photoDto.HotelId,
-            Url = photoDto.Url,
-            PublicId = photoDto.PublicId,
-            Description = photoDto.Description,
-            IsMain = photoDto.IsMain
-        };
-
+        var hotelPhoto = photoDto.ToEntity();
         await _hotelPhotoRepository.AddAsync(hotelPhoto);
-        return MapToDto(hotelPhoto);
+        return hotelPhoto.ToDto();
     }
 
     public async Task<HotelPhotoDto> UploadHotelPhotoAsync(IFormFile file, int hotelId, string description = null, bool isMain = false)
@@ -41,11 +34,9 @@ public class HotelPhotoService : IHotelPhotoService
 
         if (hotelId <= 0)
             throw new ArgumentException("Hotel ID must be a positive number", nameof(hotelId));
-
-        // Upload the photo to Cloudinary
+        
         var uploadResult = await _cloudinaryRepository.UploadPhotoAsync(file, hotelId, description);
-
-        // Create a new HotelPhoto entity and store it in the database
+        
         var hotelPhoto = new HotelPhoto
         {
             HotelId = hotelId,
@@ -56,7 +47,7 @@ public class HotelPhotoService : IHotelPhotoService
         };
 
         await _hotelPhotoRepository.AddAsync(hotelPhoto);
-        return MapToDto(hotelPhoto);
+        return hotelPhoto.ToDto();
     }
 
     public async Task<IEnumerable<HotelPhotoDto>> UploadMultipleHotelPhotosAsync(IEnumerable<IFormFile> files, int hotelId)
@@ -68,8 +59,7 @@ public class HotelPhotoService : IHotelPhotoService
             throw new ArgumentException("Hotel ID must be a positive number", nameof(hotelId));
         
         var uploadResults = await _cloudinaryRepository.UploadPhotosAsync(files, hotelId);
-
-        // Create HotelPhoto entities and store them in the database
+        
         var hotelPhotos = new List<HotelPhoto>();
         
         foreach (var result in uploadResults)
@@ -87,7 +77,7 @@ public class HotelPhotoService : IHotelPhotoService
             hotelPhotos.Add(hotelPhoto);
         }
 
-        return hotelPhotos.Select(MapToDto).ToList();
+        return hotelPhotos.Select(p => p.ToDto()).ToList();
     }
 
     public async Task<HotelPhotoDto> UpdateHotelPhotoAsync(UpdateHotelPhotoDto photoDto)
@@ -103,7 +93,7 @@ public class HotelPhotoService : IHotelPhotoService
         existingPhoto.IsMain = photoDto.IsMain;
 
         await _hotelPhotoRepository.UpdateAsync(existingPhoto);
-        return MapToDto(existingPhoto);
+        return existingPhoto.ToDto();
     }
 
     public async Task DeleteHotelPhotoAsync(int id)
@@ -111,8 +101,7 @@ public class HotelPhotoService : IHotelPhotoService
         var photo = await _hotelPhotoRepository.GetByIdAsync(id);
         if (photo == null)
             throw new KeyNotFoundException($"Photo with ID {id} not found");
-
-        // Delete from Cloudinary first
+        
         if (!string.IsNullOrEmpty(photo.PublicId))
         {
             var deleteResult = await _cloudinaryRepository.DeletePhotoAsync(photo.PublicId);
@@ -121,41 +110,37 @@ public class HotelPhotoService : IHotelPhotoService
                 throw new Exception($"Failed to delete photo with public ID {photo.PublicId} from Cloudinary");
             }
         }
-
-        // Then delete from database
+        
         await _hotelPhotoRepository.DeleteAsync(id);
     }
 
     public async Task<HotelPhotoDto> GetHotelPhotoByIdAsync(int id)
     {
         var photo = await _hotelPhotoRepository.GetByIdAsync(id);
-        return photo != null ? MapToDto(photo) : null;
+        return photo?.ToDto();
     }
 
     public async Task<IEnumerable<HotelPhotoDto>> GetAllHotelPhotosAsync()
     {
         var photos = await _hotelPhotoRepository.GetAllAsync();
-        return photos.Select(MapToDto).ToList();
+        return photos.Select(p => p.ToDto()).ToList();
     }
 
     public async Task<IEnumerable<HotelPhotoDto>> GetPhotosByHotelIdAsync(int hotelId)
     {
         var photos = await _hotelPhotoRepository.GetAllAsync();
-        return photos.Where(p => p.HotelId == hotelId && p.IsDeleted == false).Select(MapToDto).ToList();
+        return photos.Where(p => p.HotelId == hotelId && p.IsDeleted == false).Select(p => p.ToDto()).ToList();
     }
 
     public async Task<HotelPhotoDto> SetMainPhotoAsync(int photoId, int hotelId)
     {
-        // Get all photos for this hotel
         var photos = await _hotelPhotoRepository.GetAllAsync();
         var hotelPhotos = photos.Where(p => p.HotelId == hotelId).ToList();
         
-        // Ensure the photo exists and belongs to the specified hotel
         var mainPhoto = hotelPhotos.FirstOrDefault(p => p.Id == photoId);
         if (mainPhoto == null)
             throw new KeyNotFoundException($"Photo with ID {photoId} not found for hotel {hotelId}");
         
-        // Reset IsMain flag for all photos of this hotel
         foreach (var photo in hotelPhotos)
         {
             if (photo.IsMain)
@@ -165,11 +150,10 @@ public class HotelPhotoService : IHotelPhotoService
             }
         }
         
-        // Set the new main photo
         mainPhoto.IsMain = true;
         await _hotelPhotoRepository.UpdateAsync(mainPhoto);
         
-        return MapToDto(mainPhoto);
+        return mainPhoto.ToDto();
     }
 
     public async Task<string> GetTransformedImageUrlAsync(int photoId, string transformation)
@@ -183,19 +167,15 @@ public class HotelPhotoService : IHotelPhotoService
 
     public async Task SyncCloudinaryPhotosAsync(int hotelId)
     {
-        // Get photos from Cloudinary
         var cloudinaryPhotos = await _cloudinaryRepository.GetHotelPhotosFromCloudinaryAsync(hotelId);
         
-        // Get photos from database
         var dbPhotos = (await _hotelPhotoRepository.GetAllAsync()).Where(p => p.HotelId == hotelId).ToList();
         
-        // Create lookup collections for faster comparison
         var cloudinaryPublicIds = cloudinaryPhotos.Select(p => p.PublicId).ToHashSet();
         var dbPublicIds = dbPhotos.Where(p => !string.IsNullOrEmpty(p.PublicId))
                                    .Select(p => p.PublicId)
                                    .ToHashSet();
         
-        // PART 1: Upload photos that exist in DB but not in Cloudinary
         var photosToUpload = dbPhotos.Where(p => string.IsNullOrEmpty(p.PublicId) || 
                                              !cloudinaryPublicIds.Contains(p.PublicId))
                                      .ToList();
@@ -204,18 +184,14 @@ public class HotelPhotoService : IHotelPhotoService
         {
             try
             {
-                // If we have a URL but no PublicId, the photo exists somewhere but not in Cloudinary
                 if (!string.IsNullOrEmpty(photoToUpload.Url))
                 {
-                    // Download the image from its current URL
                     using (var httpClient = new HttpClient())
                     {
                         var imageBytes = await httpClient.GetByteArrayAsync(photoToUpload.Url);
                         
-                        // Create a memory stream from the downloaded image
                         using (var stream = new MemoryStream(imageBytes))
                         {
-                            // Create a form file from the stream
                             var fileName = $"hotel_{hotelId}_photo_{photoToUpload.Id}.jpg";
                             var formFile = new FormFile(
                                 baseStream: stream,
@@ -225,14 +201,12 @@ public class HotelPhotoService : IHotelPhotoService
                                 fileName: fileName
                             );
                             
-                            // Upload to Cloudinary
                             var uploadResult = await _cloudinaryRepository.UploadPhotoAsync(
                                 formFile, 
                                 hotelId, 
                                 photoToUpload.Description
                             );
                             
-                            // Update the database record with Cloudinary information
                             photoToUpload.PublicId = uploadResult.PublicId;
                             photoToUpload.Url = uploadResult.Url;
                             
@@ -243,22 +217,18 @@ public class HotelPhotoService : IHotelPhotoService
             }
             catch (Exception)
             {
-                // Continue with other photos
             }
         }
         
-        // After uploading, refresh the Cloudinary photos list
         cloudinaryPhotos = await _cloudinaryRepository.GetHotelPhotosFromCloudinaryAsync(hotelId);
         cloudinaryPublicIds = cloudinaryPhotos.Select(p => p.PublicId).ToHashSet();
         
-        // PART 2: Add photos that exist in Cloudinary but not in the database
         foreach (var cloudinaryPhoto in cloudinaryPhotos)
         {
             if (!dbPublicIds.Contains(cloudinaryPhoto.PublicId))
             {
                 try
                 {
-                    // Add the missing photo to the database
                     var newPhoto = new HotelPhoto
                     {
                         HotelId = hotelId,
@@ -273,12 +243,10 @@ public class HotelPhotoService : IHotelPhotoService
                 }
                 catch (Exception)
                 {
-                    // Continue with other photos
                 }
             }
         }
         
-        // PART 3: Handle photos that are in DB but no longer exist in Cloudinary
         var photosToRemove = dbPhotos.Where(p => !string.IsNullOrEmpty(p.PublicId) && 
                                             !cloudinaryPublicIds.Contains(p.PublicId))
                                     .ToList();
@@ -287,21 +255,15 @@ public class HotelPhotoService : IHotelPhotoService
         {
             try
             {
-                // Option 1: Remove the photo from the database
-                // await _hotelPhotoRepository.DeleteAsync(photoToRemove.Id);
-                
-                // Option 2: Update the record to indicate it's missing from Cloudinary
                 photoToRemove.PublicId = null;
                 photoToRemove.Url = photoToRemove.Url + "?status=missing_from_cloudinary";
                 await _hotelPhotoRepository.UpdateAsync(photoToRemove);
             }
             catch (Exception)
             {
-                // Continue with other photos
             }
         }
         
-        // PART 4: Verify all Cloudinary URLs match database URLs (to catch URL changes)
         var photosToUpdate = dbPhotos.Where(p => 
             !string.IsNullOrEmpty(p.PublicId) && 
             cloudinaryPublicIds.Contains(p.PublicId) &&
@@ -312,30 +274,13 @@ public class HotelPhotoService : IHotelPhotoService
         {
             try
             {
-                // Update the URL to match Cloudinary
                 var cloudinaryPhoto = cloudinaryPhotos.First(c => c.PublicId == photoToUpdate.PublicId);
                 photoToUpdate.Url = cloudinaryPhoto.Url;
                 await _hotelPhotoRepository.UpdateAsync(photoToUpdate);
             }
             catch (Exception)
             {
-                // Continue with other photos
             }
         }
-    }
-
-    // Helper method to map from entity to DTO
-    private static HotelPhotoDto MapToDto(HotelPhoto photo)
-    {
-        return new HotelPhotoDto
-        {
-            Id = photo.Id,
-            HotelId = photo.HotelId,
-            Url = photo.Url,
-            PublicId = photo.PublicId,
-            Description = photo.Description ?? "No description",
-            IsMain = photo.IsMain,
-            CreatedAt = photo.CreatedAt
-        };
     }
 }

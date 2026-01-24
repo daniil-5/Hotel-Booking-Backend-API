@@ -10,16 +10,14 @@ public class CachedUserService : IUserService
     private readonly IUserService _userService;
     private readonly ICacheService _cacheService;
     private readonly ILogger<CachedUserService> _logger;
-
-    // Cache key constants for better maintainability
+    
     private const string USER_BY_ID_KEY = "user:id:{0}";
     private const string USER_BY_EMAIL_KEY = "user:email:{0}";
     private const string USER_BY_USERNAME_KEY = "user:username:{0}";
     private const string ALL_USERS_KEY = "users:all";
     private const string USER_SEARCH_KEY = "users:search:{0}";
     private const string USER_PREFIX = "user:";
-
-    // Cache expiration times
+    
     private static readonly TimeSpan DefaultCacheExpiration = TimeSpan.FromMinutes(30);
     private static readonly TimeSpan SearchCacheExpiration = TimeSpan.FromMinutes(10);
     private static readonly TimeSpan AllUsersCacheExpiration = TimeSpan.FromMinutes(15);
@@ -38,13 +36,10 @@ public class CachedUserService : IUserService
     {
         _logger.LogInformation("Creating new user with email: {Email}", userDto.Email);
         
-        // Create user through the underlying service
         var newUser = await _userService.CreateUserAsync(userDto);
         
-        // Cache the newly created user
         await CacheUser(newUser);
         
-        // Invalidate related caches since we have a new user
         await InvalidateListCaches();
         
         _logger.LogInformation("User created and cached with ID: {UserId}", newUser.Id);
@@ -55,15 +50,12 @@ public class CachedUserService : IUserService
     {
         _logger.LogInformation("Updating user with ID: {UserId}", userDto.Id);
         
-        // Get the current user to check what's changing
         var currentUser = await GetUserByIdAsync(userDto.Id);
         if (currentUser == null)
             throw new ApplicationException($"User with ID {userDto.Id} not found");
         
-        // Update user through the underlying service
         var updatedUser = await _userService.UpdateUserAsync(userDto);
         
-        // Invalidate old cache entries if email or username changed
         if (currentUser.Email != updatedUser.Email)
         {
             await _cacheService.RemoveAsync(string.Format(USER_BY_EMAIL_KEY, currentUser.Email));
@@ -74,10 +66,7 @@ public class CachedUserService : IUserService
             await _cacheService.RemoveAsync(string.Format(USER_BY_USERNAME_KEY, currentUser.Username));
         }
         
-        // Cache the updated user with new values
         await CacheUser(updatedUser);
-        
-        // Invalidate list caches since user data changed
         await InvalidateListCaches();
         
         _logger.LogInformation("User updated and cache refreshed for ID: {UserId}", updatedUser.Id);
@@ -88,13 +77,10 @@ public class CachedUserService : IUserService
     {
         _logger.LogInformation("Deleting user with ID: {UserId}", id);
         
-        // Get user details before deletion for cache invalidation
         var userToDelete = await GetUserByIdAsync(id);
         
-        // Delete user through the underlying service
         await _userService.DeleteUserAsync(id);
         
-        // Remove all cache entries for this user
         if (userToDelete != null)
         {
             await _cacheService.RemoveAsync(string.Format(USER_BY_ID_KEY, id));
@@ -102,7 +88,6 @@ public class CachedUserService : IUserService
             await _cacheService.RemoveAsync(string.Format(USER_BY_USERNAME_KEY, userToDelete.Username));
         }
         
-        // Invalidate list caches since user was deleted
         await InvalidateListCaches();
         
         _logger.LogInformation("User deleted and cache invalidated for ID: {UserId}", id);
@@ -112,7 +97,6 @@ public class CachedUserService : IUserService
     {
         var cacheKey = string.Format(USER_BY_ID_KEY, id);
         
-        // Try to get from cache first
         var cachedUser = await _cacheService.GetAsync<UserDto>(cacheKey);
         if (cachedUser != null)
         {
@@ -122,10 +106,8 @@ public class CachedUserService : IUserService
         
         _logger.LogDebug("User not found in cache, fetching from database for ID: {UserId}", id);
         
-        // Get from underlying service if not in cache
         var user = await _userService.GetUserByIdAsync(id);
         
-        // Cache the result if found
         if (user != null)
         {
             await CacheUser(user);
@@ -139,7 +121,6 @@ public class CachedUserService : IUserService
     {
         var cacheKey = string.Format(USER_BY_EMAIL_KEY, email.ToLower());
         
-        // Try to get from cache first
         var cachedUser = await _cacheService.GetAsync<UserDto>(cacheKey);
         if (cachedUser != null)
         {
@@ -149,10 +130,8 @@ public class CachedUserService : IUserService
         
         _logger.LogDebug("User not found in cache, fetching from database for email: {Email}", email);
         
-        // Get from underlying service if not in cache
         var user = await _userService.GetUserByEmailAsync(email);
         
-        // Cache the result if found
         if (user != null)
         {
             await CacheUser(user);
@@ -166,7 +145,6 @@ public class CachedUserService : IUserService
     {
         var cacheKey = string.Format(USER_BY_USERNAME_KEY, username.ToLower());
         
-        // Try to get from cache first
         var cachedUser = await _cacheService.GetAsync<UserDto>(cacheKey);
         if (cachedUser != null)
         {
@@ -176,10 +154,8 @@ public class CachedUserService : IUserService
         
         _logger.LogDebug("User not found in cache, fetching from database for username: {Username}", username);
         
-        // Get from underlying service if not in cache
         var user = await _userService.GetUserByUsernameAsync(username);
         
-        // Cache the result if found
         if (user != null)
         {
             await CacheUser(user);
@@ -193,7 +169,6 @@ public class CachedUserService : IUserService
     {
         var cacheKey = ALL_USERS_KEY;
         
-        // Try to get from cache first
         var cachedUsers = await _cacheService.GetAsync<IEnumerable<UserDto>>(cacheKey);
         if (cachedUsers != null)
         {
@@ -203,13 +178,10 @@ public class CachedUserService : IUserService
         
         _logger.LogDebug("All users not found in cache, fetching from database");
         
-        // Get from underlying service if not in cache
         var users = await _userService.GetAllUsersAsync();
         
-        // Cache the result
         await _cacheService.SetAsync(cacheKey, users, AllUsersCacheExpiration);
         
-        // Also cache individual users for better hit rate
         foreach (var user in users)
         {
             await CacheUser(user);
@@ -221,11 +193,9 @@ public class CachedUserService : IUserService
 
     public async Task<UserSearchResultDto> SearchUsersAsync(UserSearchDto searchDto)
     {
-        // Create a cache key based on search parameters
         var searchKey = GenerateSearchCacheKey(searchDto);
         var cacheKey = string.Format(USER_SEARCH_KEY, searchKey);
         
-        // Try to get from cache first
         var cachedResult = await _cacheService.GetAsync<UserSearchResultDto>(cacheKey);
         if (cachedResult != null)
         {
@@ -235,13 +205,10 @@ public class CachedUserService : IUserService
         
         _logger.LogDebug("Search result not found in cache, executing search for key: {SearchKey}", searchKey);
         
-        // Get from underlying service if not in cache
         var searchResult = await _userService.SearchUsersAsync(searchDto);
         
-        // Cache the search result with shorter expiration
         await _cacheService.SetAsync(cacheKey, searchResult, SearchCacheExpiration);
         
-        // Also cache individual users from the search result
         foreach (var user in searchResult.Users)
         {
             await CacheUser(user);
@@ -257,12 +224,10 @@ public class CachedUserService : IUserService
     {
         _logger.LogInformation("Changing password for user ID: {UserId}", changePasswordDto.UserId);
         
-        // Change password through the underlying service
         var result = await _userService.ChangePasswordAsync(changePasswordDto);
         
         if (result)
         {
-            // Get updated user and refresh cache
             var updatedUser = await _userService.GetUserByIdAsync(changePasswordDto.UserId);
             if (updatedUser != null)
             {
@@ -278,16 +243,10 @@ public class CachedUserService : IUserService
 
     public async Task<bool> VerifyUserPasswordAsync(string email, string password)
     {
-        // This method doesn't need caching as it involves password verification
-        // and shouldn't cache sensitive operations
         return await _userService.VerifyUserPasswordAsync(email, password);
     }
-
-    #region Private Helper Methods
-
-    /// <summary>
-    /// Caches a user with all possible cache keys (by ID, email, username)
-    /// </summary>
+    
+    
     private async Task CacheUser(UserDto user)
     {
         if (user == null) return;
@@ -301,10 +260,7 @@ public class CachedUserService : IUserService
 
         await Task.WhenAll(tasks);
     }
-
-    /// <summary>
-    /// Invalidates all list-based caches (all users, search results)
-    /// </summary>
+    
     private async Task InvalidateListCaches()
     {
         var tasks = new List<Task>
@@ -317,10 +273,7 @@ public class CachedUserService : IUserService
         
         _logger.LogDebug("List caches invalidated");
     }
-
-    /// <summary>
-    /// Generates a consistent cache key for search parameters
-    /// </summary>
+    
     private static string GenerateSearchCacheKey(UserSearchDto searchDto)
     {
         var keyParts = new List<string>
@@ -335,15 +288,10 @@ public class CachedUserService : IUserService
 
         return string.Join("|", keyParts).ToLower();
     }
-
-    /// <summary>
-    /// Invalidates all user-related caches (useful for bulk operations)
-    /// </summary>
+    
     public async Task InvalidateAllUserCachesAsync()
     {
         await _cacheService.RemoveByPrefixAsync(USER_PREFIX);
         _logger.LogInformation("All user caches invalidated");
     }
-
-    #endregion
 }

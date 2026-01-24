@@ -71,16 +71,12 @@ public class RedisCacheService : ICacheService
     {
         try
         {
-            // Get the Redis server instance
             var server = _connectionMultiplexer.GetServer(_connectionMultiplexer.GetEndPoints().First());
-            
-            // Find all keys matching the pattern
+
             var keys = server.Keys(pattern: pattern);
-            
-            // Get the database instance
+         
             var database = _connectionMultiplexer.GetDatabase();
-            
-            // Delete all matching keys
+
             var keyArray = keys.ToArray();
             if (keyArray.Length > 0)
             {
@@ -93,14 +89,12 @@ public class RedisCacheService : ICacheService
             _logger.LogError(ex, "Error removing cache keys by pattern {Pattern}", pattern);
         }
     }
-
-    // Additional helper method for bulk operations
+    
     public async Task RemoveByPrefixAsync(string prefix)
     {
         await RemoveByPatternAsync($"{prefix}*");
     }
-
-    // Method to check if a key exists
+    
     public async Task<bool> ExistsAsync(string key)
     {
         try
@@ -115,7 +109,6 @@ public class RedisCacheService : ICacheService
         }
     }
 
-    // Method to get remaining time to live for a key
     public async Task<TimeSpan?> GetTtlAsync(string key)
     {
         try

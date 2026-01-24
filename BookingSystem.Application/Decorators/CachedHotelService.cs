@@ -1,5 +1,5 @@
-using BookingSystem.Application.Hotel;
-using BookingSystem.Application.Services;
+using BookingSystem.Application.DTOs.Hotel;
+using BookingSystem.Application.Interfaces;
 using BookingSystem.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
 
@@ -10,15 +10,13 @@ namespace BookingSystem.Application.Decorators
         private readonly IHotelService _hotelService;
         private readonly ICacheService _cacheService;
         private readonly ILogger<CachedHotelService> _logger;
-
-        // Cache key constants
+        
         private const string HOTEL_BY_ID_KEY = "hotel:id:{0}";
         private const string ALL_HOTELS_KEY = "hotels:all";
         private const string HOTEL_SEARCH_KEY = "hotels:search:{0}";
         private const string HOTEL_PREFIX = "hotel";
         private const string HOTELS_PREFIX = "hotels";
-
-        // Cache expiration times - hotel data is relatively stable
+        
         private static readonly TimeSpan HotelCacheExpiration = TimeSpan.FromMinutes(45);
         private static readonly TimeSpan HotelSearchExpiration = TimeSpan.FromMinutes(20);
         private static readonly TimeSpan AllHotelsExpiration = TimeSpan.FromMinutes(30);
@@ -39,10 +37,7 @@ namespace BookingSystem.Application.Decorators
             
             var newHotel = await _hotelService.CreateHotelAsync(hotelDto);
             
-            // Cache the new hotel
             await CacheHotel(newHotel);
-            
-            // Invalidate list caches
             await InvalidateListCaches();
             
             _logger.LogInformation("Hotel created and cached with ID: {HotelId}", newHotel.Id);
@@ -54,11 +49,8 @@ namespace BookingSystem.Application.Decorators
             _logger.LogInformation("Updating hotel with ID: {HotelId}", hotelDto.Id);
             
             var updatedHotel = await _hotelService.UpdateHotelAsync(hotelDto);
-            
-            // Update cache with new data
+
             await CacheHotel(updatedHotel);
-            
-            // Invalidate list caches as hotel data changed
             await InvalidateListCaches();
             
             _logger.LogInformation("Hotel updated and cache refreshed for ID: {HotelId}", updatedHotel.Id);
@@ -70,11 +62,7 @@ namespace BookingSystem.Application.Decorators
             _logger.LogInformation("Deleting hotel with ID: {HotelId}", id);
             
             await _hotelService.DeleteHotelAsync(id);
-            
-            // Remove from cache
             await _cacheService.RemoveAsync(string.Format(HOTEL_BY_ID_KEY, id));
-            
-            // Invalidate list caches
             await InvalidateListCaches();
             
             _logger.LogInformation("Hotel deleted and cache invalidated for ID: {HotelId}", id);
@@ -119,10 +107,8 @@ namespace BookingSystem.Application.Decorators
             
             var hotels = await _hotelService.GetAllHotelsAsync();
             
-            // Cache the result
             await _cacheService.SetAsync(cacheKey, hotels, AllHotelsExpiration);
             
-            // Also cache individual hotels
             foreach (var hotel in hotels)
             {
                 await CacheHotel(hotel);
@@ -134,7 +120,6 @@ namespace BookingSystem.Application.Decorators
 
         public async Task<HotelSearchResultDto> SearchHotelsAsync(HotelSearchDto searchDto)
         {
-            // Generate cache key based on search parameters
             var searchKey = GenerateSearchCacheKey(searchDto);
             var cacheKey = string.Format(HOTEL_SEARCH_KEY, searchKey);
             
@@ -149,10 +134,8 @@ namespace BookingSystem.Application.Decorators
             
             var searchResult = await _hotelService.SearchHotelsAsync(searchDto);
             
-            // Cache the search result
             await _cacheService.SetAsync(cacheKey, searchResult, HotelSearchExpiration);
             
-            // Also cache individual hotels from the search result
             foreach (var hotel in searchResult.Hotels)
             {
                 await CacheHotel(hotel);
@@ -163,8 +146,6 @@ namespace BookingSystem.Application.Decorators
             
             return searchResult;
         }
-
-        #region Private Helper Methods
 
         private async Task CacheHotel(HotelDto hotel)
         {
@@ -186,9 +167,6 @@ namespace BookingSystem.Application.Decorators
             _logger.LogDebug("Hotel list caches invalidated");
         }
 
-        /// <summary>
-        /// Generates a consistent cache key for hotel search parameters
-        /// </summary>
         private static string GenerateSearchCacheKey(HotelSearchDto searchDto)
         {
             var keyParts = new List<string>
@@ -209,10 +187,7 @@ namespace BookingSystem.Application.Decorators
 
             return string.Join("|", keyParts).ToLower();
         }
-
-        /// <summary>
-        /// Invalidates all hotel-related caches (useful for bulk operations)
-        /// </summary>
+        
         public async Task InvalidateAllHotelCachesAsync()
         {
             var tasks = new List<Task>
@@ -224,7 +199,5 @@ namespace BookingSystem.Application.Decorators
             await Task.WhenAll(tasks);
             _logger.LogInformation("All hotel caches invalidated");
         }
-
-        #endregion
     }
 }

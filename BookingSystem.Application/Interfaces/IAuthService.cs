@@ -1,6 +1,4 @@
-using BookingSystem.Application.DTOs;
 using BookingSystem.Application.DTOs.User;
-using BookingSystem.Domain.Entities;
 
 namespace BookingSystem.Application.Interfaces;
 

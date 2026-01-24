@@ -1,6 +1,6 @@
 using BookingSystem.Application.DTOs.RoomPricing;
 
-namespace BookingSystem.Application.Services;
+namespace BookingSystem.Application.Interfaces;
 
 public interface IRoomPricingService
 {
