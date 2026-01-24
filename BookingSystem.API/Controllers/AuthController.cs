@@ -1,12 +1,11 @@
-using System.Security.Claims;
-using BookingSystem.Application.DTOs;
 using BookingSystem.Application.DTOs.User;
 using BookingSystem.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/auth")]
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
@@ -70,7 +69,6 @@ public class AuthController : ControllerBase
     
     private void SetTokenCookie(string token)
     {
-        // Get token expiration from configuration (default 7 days)
         var expirationDays = _configuration.GetValue<int>("JwtSettings:DurationInDays", 7);
         
         var cookieOptions = new CookieOptions

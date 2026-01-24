@@ -1,14 +1,12 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using BookingSystem.Application.DTOs.RoomPricing;
-using BookingSystem.Application.Services;
+using BookingSystem.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace BookingSystem.Api.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/room_pricings")]
     public class RoomPricingsController : ControllerBase
     {
         private readonly IRoomPricingService _roomPricingService;
@@ -17,11 +15,7 @@ namespace BookingSystem.Api.Controllers
         {
             _roomPricingService = roomPricingService;
         }
-
-        /// <summary>
-        /// Get all room pricing records
-        /// </summary>
-        /// <returns>A collection of room pricing records</returns>
+        
         [HttpGet]
         [ProducesResponseType(typeof(IEnumerable<RoomPricingDto>), StatusCodes.Status200OK)]
         public async Task<ActionResult<IEnumerable<RoomPricingDto>>> GetAll()
@@ -29,12 +23,7 @@ namespace BookingSystem.Api.Controllers
             var pricings = await _roomPricingService.GetAllRoomPricingsAsync();
             return Ok(pricings);
         }
-
-        /// <summary>
-        /// Get a room pricing record by ID
-        /// </summary>
-        /// <param name="id">The ID of the room pricing record</param>
-        /// <returns>The room pricing record</returns>
+        
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(RoomPricingDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -47,12 +36,7 @@ namespace BookingSystem.Api.Controllers
             }
             return Ok(pricing);
         }
-
-        /// <summary>
-        /// Create a new room pricing record
-        /// </summary>
-        /// <param name="pricingDto">The room pricing data</param>
-        /// <returns>The newly created room pricing record</returns>
+        
         [HttpPost]
         [Authorize(Roles = "Admin,Manager")]
         [ProducesResponseType(typeof(RoomPricingDto), StatusCodes.Status201Created)]
@@ -73,12 +57,6 @@ namespace BookingSystem.Api.Controllers
             );
         }
 
-        /// <summary>
-        /// Update an existing room pricing record
-        /// </summary>
-        /// <param name="id">The ID of the room pricing record to update</param>
-        /// <param name="pricingDto">The updated room pricing data</param>
-        /// <returns>The updated room pricing record</returns>
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin,Manager")]
         [ProducesResponseType(typeof(RoomPricingDto), StatusCodes.Status200OK)]
@@ -110,12 +88,7 @@ namespace BookingSystem.Api.Controllers
                 return StatusCode(500, $"An error occurred while updating room pricing: {ex.Message}");
             }
         }
-
-        /// <summary>
-        /// Delete a room pricing record
-        /// </summary>
-        /// <param name="id">The ID of the room pricing record to delete</param>
-        /// <returns>No content</returns>
+        
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin,Manager")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]

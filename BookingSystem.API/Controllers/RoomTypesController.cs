@@ -1,11 +1,11 @@
+using BookingSystem.Application.DTOs.RoomType;
 using BookingSystem.Application.Interfaces;
-using BookingSystem.Application.RoomType;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BookingSystem.API.Controllers;
 
-[Route("api/room-types")]
+[Route("api/room_types")]
 [ApiController]
 public class RoomTypesController : ControllerBase
 {
@@ -46,7 +46,7 @@ public class RoomTypesController : ControllerBase
         }
     }
 
-    [HttpGet("by-hotel/{hotelId:int}")]
+    [HttpGet("by_hotel/{hotelId}")]
     [AllowAnonymous]
     public async Task<ActionResult<IEnumerable<RoomTypeDto>>> GetRoomTypesByHotelId(int hotelId)
     {
@@ -84,7 +84,7 @@ public class RoomTypesController : ControllerBase
         }
     }
 
-    [HttpPut("{id:int}")]
+    [HttpPut("{id}")]
     [Authorize(Roles = "Manager,Admin")]
     public async Task<IActionResult> UpdateRoomType(int id, UpdateRoomTypeDto roomTypeDto)
     {
@@ -108,7 +108,7 @@ public class RoomTypesController : ControllerBase
         }
     }
 
-    [HttpDelete("{id:int}")]
+    [HttpDelete("{id}")]
     [Authorize(Roles = "Manager,Admin")]
     public async Task<IActionResult> DeleteRoomType(int id)
     {

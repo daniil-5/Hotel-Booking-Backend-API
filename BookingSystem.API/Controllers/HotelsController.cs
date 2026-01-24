@@ -1,16 +1,11 @@
-using BookingSystem.Application.Hotel;
-using BookingSystem.Application.Services;
-using Microsoft.AspNetCore.Mvc;
-using BookingSystem.Domain.Entities;
-using BookingSystem.Infrastructure.Data;
+using BookingSystem.Application.DTOs.Hotel;
+using BookingSystem.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.EntityFrameworkCore;
-using System.Threading.Tasks;
-using System.Collections.Generic;
+using Microsoft.AspNetCore.Mvc;
 
 namespace BookingSystem.API.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/hotels")]
     [ApiController]
     public class HotelsController : ControllerBase
     {
@@ -22,8 +17,7 @@ namespace BookingSystem.API.Controllers
             _hotelService = hotelService;
             _logger = logger;
         }
-
-        // GET: api/Hotels
+        
         [HttpGet]
         [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<HotelDto>>> GetHotels()
@@ -40,10 +34,9 @@ namespace BookingSystem.API.Controllers
                 return StatusCode(500, "An error occurred while retrieving hotels");
             }
         }
-
-        // GET: api/Hotels/5
+        
         [HttpGet("{id}")]
-        [AllowAnonymous] // Allow public access to hotel details
+        [AllowAnonymous]
         public async Task<ActionResult<HotelDto>> GetHotel(int id)
         {
             try
@@ -65,26 +58,7 @@ namespace BookingSystem.API.Controllers
                 return StatusCode(500, "An error occurred while retrieving the hotel");
             }
         }
-
-        // POST: api/Hotels
-        /// <summary>
-        /// Creates a new hotel
-        /// </summary>
-        /// <remarks>
-        /// Sample request:
-        /// 
-        /// {
-        ///     "name": "Urban Boutique Hotel",
-        ///     "description": "A stylish hotel in the heart of the city, close to attractions.",
-        ///     "location": "New York",
-        ///     "address": "654 City Blvd, Metropolis",
-        ///     "rating": 4.9,
-        ///     "basePrice": 199,
-        ///     "checkInTime": "15:00",
-        ///     "checkOutTime": "11:00",
-        ///     "amenities": ["WiFi", "Pool", "Gym"]
-        /// }
-        /// </remarks>
+        
         [HttpPost]
         [Authorize(Roles = "Manager,Admin")]
         public async Task<ActionResult<HotelDto>> CreateHotel(CreateHotelDto hotelDto)
@@ -101,8 +75,7 @@ namespace BookingSystem.API.Controllers
                 return StatusCode(500, "An error occurred while creating the hotel");
             }
         }
-
-        // PUT: api/Hotels/5
+        
         [HttpPut("{id}")]
         [Authorize(Roles = "Manager,Admin")]
         public async Task<IActionResult> UpdateHotel(int id, UpdateHotelDto hotelDto)
@@ -129,8 +102,7 @@ namespace BookingSystem.API.Controllers
                 return StatusCode(500, "An error occurred while updating the hotel");
             }
         }
-
-        // DELETE: api/Hotels/5
+        
         [HttpDelete("{id}")]
         [Authorize(Roles = "Manager,Admin")]
         public async Task<IActionResult> DeleteHotel(int id)
@@ -153,9 +125,8 @@ namespace BookingSystem.API.Controllers
             }
         }
         
-        // GET: api/Hotels/search
         [HttpGet("search")]
-        [AllowAnonymous] // Allow public access to search
+        [AllowAnonymous]
         public async Task<ActionResult<HotelSearchResultDto>> SearchHotels([FromQuery] HotelSearchDto searchDto)
         {
             try

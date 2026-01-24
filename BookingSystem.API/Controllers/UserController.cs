@@ -1,10 +1,9 @@
-
 using BookingSystem.Application.DTOs.User;
 using BookingSystem.Application.Interfaces;
+using BookingSystem.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using BookingSystem.Domain.Enums;
 
 namespace BookingSystem.API.Controllers
 {
@@ -33,8 +32,7 @@ namespace BookingSystem.API.Controllers
         {
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var currentUserRole = User.FindFirstValue(ClaimTypes.Role);
-
-            // Only allow users to access their own data unless they are Admin or Manager
+            
             if (currentUserId != id.ToString() && 
                 currentUserRole != "Admin" && 
                 currentUserRole != "Manager")
@@ -70,9 +68,7 @@ namespace BookingSystem.API.Controllers
 
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var currentUserRole = User.FindFirstValue(ClaimTypes.Role);
-
-            // Users can only update their own profile unless they are Admin
-            // Managers can update other users but can't change them to Admin
+            
             if (currentUserId != id.ToString() && currentUserRole != "Admin" && 
                 !(currentUserRole == "Manager" && userDto.Role != UserRole.Admin))
             {
@@ -113,14 +109,13 @@ namespace BookingSystem.API.Controllers
             return Ok(result);
         }
 
-        [HttpPost("change-password")]
+        [HttpPost("change_password")]
         [Authorize]
         public async Task<IActionResult> ChangePassword(ChangePasswordDto changePasswordDto)
         {
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var currentUserRole = User.FindFirstValue(ClaimTypes.Role);
-
-            // Users can only change their own password unless they are Admin
+            
             if (currentUserId != changePasswordDto.UserId.ToString() && currentUserRole != "Admin")
             {
                 return Forbid();
@@ -154,7 +149,7 @@ namespace BookingSystem.API.Controllers
             return user != null ? Ok(user) : NotFound();
         }
         
-        [HttpGet("by-email/{email}")]
+        [HttpGet("by_email/{email}")]
         [Authorize(Roles = "Admin,Manager")]
         public async Task<ActionResult<UserDto>> GetUserByEmail(string email)
         {
@@ -162,7 +157,7 @@ namespace BookingSystem.API.Controllers
             return user != null ? Ok(user) : NotFound();
         }
         
-        [HttpGet("by-username/{username}")]
+        [HttpGet("by_username/{username}")]
         [Authorize(Roles = "Admin,Manager")]
         public async Task<ActionResult<UserDto>> GetUserByUsername(string username)
         {

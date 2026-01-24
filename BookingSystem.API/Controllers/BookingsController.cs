@@ -1,10 +1,10 @@
-using BookingSystem.Application.Booking;
+using BookingSystem.Application.DTOs.Booking;
 using BookingSystem.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
-[Route("api/[controller]")]
+[Route("api/bookings")]
 [ApiController]
 [Authorize]
 public class BookingsController : ControllerBase
@@ -19,14 +19,12 @@ public class BookingsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<BookingResponseDto>>> GetBookings()
     {
-        // Get current user ID from JWT claims
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId))
         {
             return Unauthorized("User ID not found in token");
         }
-
-        // Allow managers/admins to see all bookings, others see only their own
+        
         if (User.IsInRole("Manager") || User.IsInRole("Admin"))
         {
             var allBookings = await _bookingService.GetAllBookingsAsync();
@@ -46,21 +44,18 @@ public class BookingsController : ControllerBase
         
         if (booking == null)
             return NotFound();
-
-        // Check if user has access to this booking
+        
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId))
         {
             return Unauthorized("User ID not found in token");
         }
-
-        // Allow managers/admins to access any booking
+        
         if (User.IsInRole("Manager") || User.IsInRole("Admin"))
         {
             return Ok(booking);
         }
         
-        // Regular users can only access their own bookings
         if (booking.UserId != int.Parse(userId))
         {
             return Forbid();
@@ -70,27 +65,45 @@ public class BookingsController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<BookingResponseDto>> CreateBooking(CreateBookingDto bookingDto)
+    public async Task<IActionResult> CreateBooking(CreateBookingDto bookingDto)
     {
         try
         {
-            // Get current user ID from JWT claims and assign it to the booking
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
             {
                 return Unauthorized("User ID not found in token");
             }
 
-            // Assign the current user ID to the booking
             bookingDto.UserId = int.Parse(userId);
-
-            var booking = await _bookingService.CreateBookingAsync(bookingDto);
-            return CreatedAtAction(nameof(GetBooking), new { id = booking.Id }, booking);
+            
+            var trackingId = await _bookingService.CreateBookingAsync(bookingDto);
+            
+            return Accepted(new 
+            { 
+                TrackingId = trackingId, 
+                Message = "Booking request submitted successfully. Please check status later.",
+                StatusUrl = $"/api/bookings/status/{trackingId}"
+            });
         }
         catch (Exception ex)
         {
             return BadRequest(ex.Message);
         }
+    }
+    
+    [HttpGet("status/{trackingId}")]
+    public async Task<IActionResult> GetBookingStatus(Guid trackingId)
+    {
+        var booking = await _bookingService.GetBookingByTrackingIdAsync(trackingId);
+        Console.WriteLine(trackingId);
+
+        if (booking == null)
+        {
+            return Ok(new { Status = "Processing", TrackingId = trackingId });
+        }
+
+        return Ok(new { Status = "Confirmed", Booking = booking });
     }
 
     [HttpPut("{id}")]
@@ -101,22 +114,18 @@ public class BookingsController : ControllerBase
             if (id != bookingDto.Id) 
                 return BadRequest("ID mismatch");
             
-            // Check if user has permission to update this booking
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
             {
                 return Unauthorized("User ID not found in token");
             }
-
-            // Get the booking to check ownership
+            
             var existingBooking = await _bookingService.GetBookingByIdAsync(id);
             if (existingBooking == null)
                 return NotFound();
-
-            // Allow managers/admins to update any booking
+            
             if (!User.IsInRole("Manager") && !User.IsInRole("Admin"))
             {
-                // Regular users can only update their own bookings
                 if (existingBooking.UserId != int.Parse(userId))
                 {
                     return Forbid();
@@ -137,22 +146,18 @@ public class BookingsController : ControllerBase
     {
         try
         {
-            // Check if user has permission to delete this booking
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
             {
                 return Unauthorized("User ID not found in token");
             }
-
-            // Get the booking to check ownership
+            
             var existingBooking = await _bookingService.GetBookingByIdAsync(id);
             if (existingBooking == null)
                 return NotFound();
-
-            // Allow managers/admins to delete any booking
+            
             if (!User.IsInRole("Manager") && !User.IsInRole("Admin"))
             {
-                // Regular users can only delete their own bookings
                 if (existingBooking.UserId != int.Parse(userId))
                 {
                     return Forbid();
@@ -166,12 +171,5 @@ public class BookingsController : ControllerBase
         {
             return BadRequest(ex.Message);
         }
-    }
-    [HttpGet("all")]
-    // [Authorize(Roles = "Manager,Admin")]
-    public async Task<ActionResult<IEnumerable<BookingResponseDto>>> GetAllBookings()
-    {
-        var bookings = await _bookingService.GetAllBookingsAsync();
-        return Ok(bookings);
     }
 }

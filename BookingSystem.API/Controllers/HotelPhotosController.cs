@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace BookingSystem.API.Controllers;
 
 
-[Route("api/[controller]")]
+[Route("api/hotel_photos")]
 [ApiController]
 public class HotelPhotosController : ControllerBase
 {
@@ -20,10 +20,7 @@ public class HotelPhotosController : ControllerBase
         _photoService = photoService;
         _logger = logger;
     }
-    
-    /// <summary>
-    /// Gets all photos in the system
-    /// </summary>
+
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [Authorize]
@@ -40,9 +37,7 @@ public class HotelPhotosController : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while retrieving all photos");
         }
     }
-    /// <summary>
-    /// Gets a photo by ID
-    /// </summary>
+
     [HttpGet("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -62,10 +57,7 @@ public class HotelPhotosController : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while retrieving the photo");
         }
     }
-
-    /// <summary>
-    /// Gets all photos for a specific hotel
-    /// </summary>
+    
     [HttpGet("hotel/{hotelId}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<HotelPhotoDto>>> GetByHotelId(int hotelId)
@@ -81,10 +73,7 @@ public class HotelPhotosController : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while retrieving the photos");
         }
     }
-
-    /// <summary>
-    /// Creates a new photo record manually
-    /// </summary>
+    
     [HttpPost]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status201Created)]
@@ -107,9 +96,6 @@ public class HotelPhotosController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Uploads a single photo file to Cloudinary and creates a record
-    /// </summary>
     [HttpPost("upload")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -138,9 +124,6 @@ public class HotelPhotosController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Uploads multiple photos to Cloudinary for a hotel
-    /// </summary>
     [HttpPost("upload/multiple")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -166,10 +149,7 @@ public class HotelPhotosController : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while uploading the photos");
         }
     }
-
-    /// <summary>
-    /// Updates an existing photo's metadata
-    /// </summary>
+    
     [HttpPut("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -194,10 +174,7 @@ public class HotelPhotosController : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while updating the photo");
         }
     }
-
-    /// <summary>
-    /// Deletes a photo from both Cloudinary and the database
-    /// </summary>
+    
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -218,11 +195,8 @@ public class HotelPhotosController : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while deleting the photo");
         }
     }
-
-    /// <summary>
-    /// Sets a photo as the main photo for a hotel
-    /// </summary>
-    [HttpPut("{id}/set-main")]
+    
+    [HttpPut("{id}/set_main")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<HotelPhotoDto>> SetMainPhoto(int id, [FromQuery] int hotelId)
@@ -243,9 +217,6 @@ public class HotelPhotosController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Gets a URL for a transformed image
-    /// </summary>
     [HttpGet("{id}/transform")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -266,10 +237,7 @@ public class HotelPhotosController : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while getting the transformed image URL");
         }
     }
-
-    /// <summary>
-    /// Syncs photos between Cloudinary and the database for a hotel
-    /// </summary>
+    
     [HttpPost("sync/{hotelId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
