@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace BookingSystem.Application.Decorators;
+
 public class CachedBookingService : IBookingService
 {
     private readonly IBookingService _bookingService;
@@ -351,3 +352,4 @@ public class CachedBookingService : IBookingService
         _logger.LogInformation("All booking caches invalidated");
     }
 }
+

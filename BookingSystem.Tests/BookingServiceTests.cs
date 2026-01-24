@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using BookingSystem.Application.DTOs.Booking;
 using BookingSystem.Application.DTOs.Commands;
 using BookingSystem.Application.Interfaces;
@@ -10,7 +11,6 @@ using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
-using System.Linq.Expressions;
 using Xunit;
 
 namespace BookingSystem.Tests.Services

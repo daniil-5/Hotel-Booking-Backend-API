@@ -1,7 +1,7 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using BookingSystem.Domain.Entities;
 using BookingSystem.Domain.Enums;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace BookingSystem.Infrastructure.Data
 {

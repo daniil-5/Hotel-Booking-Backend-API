@@ -1,9 +1,9 @@
 using System.Linq.Expressions;
 using BookingSystem.Application.DTOs.Hotel;
 using BookingSystem.Application.Interfaces;
-using BookingSystem.Domain.Interfaces;
 using BookingSystem.Application.Mappers;
 using BookingSystem.Domain.Entities;
+using BookingSystem.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace BookingSystem.Application.Services;

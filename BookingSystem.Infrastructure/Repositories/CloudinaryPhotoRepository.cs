@@ -1,7 +1,7 @@
 using BookingSystem.Domain.Interfaces;
 using BookingSystem.Domain.Other;
-using CloudinaryDotNet.Actions;
 using CloudinaryDotNet;
+using CloudinaryDotNet.Actions;
 using Microsoft.AspNetCore.Http;
 
 namespace BookingSystem.Infrastructure.Repositories;

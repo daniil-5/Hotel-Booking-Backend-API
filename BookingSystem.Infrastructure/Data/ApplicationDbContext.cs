@@ -1,5 +1,5 @@
-using Microsoft.EntityFrameworkCore;
 using BookingSystem.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace BookingSystem.Infrastructure.Data
 {

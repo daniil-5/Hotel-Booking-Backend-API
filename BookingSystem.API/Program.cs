@@ -1,3 +1,4 @@
+using System.Text;
 using BookingSystem.API.BackgroundServices;
 using BookingSystem.Application.Decorators;
 using BookingSystem.Application.Interfaces;
@@ -11,16 +12,15 @@ using BookingSystem.Infrastructure.Kafka;
 using BookingSystem.Infrastructure.Repositories;
 using BookingSystem.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Serilog.Events;
 using Serilog;
+using Serilog.Events;
 using StackExchange.Redis;
-using System.Text;
 
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 var builder = WebApplication.CreateBuilder(args);

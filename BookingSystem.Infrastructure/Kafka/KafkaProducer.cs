@@ -1,9 +1,9 @@
+using System.Text.Json;
 using BookingSystem.Application.Interfaces;
 using BookingSystem.Application.Settings;
 using Confluent.Kafka;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Text.Json;
 
 namespace BookingSystem.Infrastructure.Kafka;
 

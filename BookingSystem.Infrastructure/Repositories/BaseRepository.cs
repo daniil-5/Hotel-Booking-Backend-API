@@ -1,8 +1,8 @@
+using System.Linq.Expressions;
+using System.Reflection;
 using BookingSystem.Domain.Interfaces;
 using BookingSystem.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
-using System.Linq.Expressions;
-using System.Reflection;
 
 namespace BookingSystem.Infrastructure.Repositories
 {
