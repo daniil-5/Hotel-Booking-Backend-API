@@ -1,4 +1,4 @@
-namespace BookingSystem.Application.Booking;
+namespace BookingSystem.Application.DTOs.Booking;
 
 public class UpdateBookingDto : CreateBookingDto
 {

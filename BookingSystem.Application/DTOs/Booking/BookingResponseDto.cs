@@ -1,4 +1,4 @@
-namespace BookingSystem.Application.Booking;
+namespace BookingSystem.Application.DTOs.Booking;
 
 public class BookingResponseDto
 {
@@ -11,4 +11,5 @@ public class BookingResponseDto
     public int GuestCount { get; set; }
     public decimal TotalPrice { get; set; }
     public int Status { get; set; }
+    public Guid TrackingId { get; set; }
 }

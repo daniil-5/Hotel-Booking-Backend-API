@@ -1,7 +1,10 @@
-using BookingSystem.Application.Booking;
+using BookingSystem.Application.DTOs.Booking;
+using BookingSystem.Application.DTOs.Commands;
 using BookingSystem.Application.Interfaces;
+using BookingSystem.Application.Settings;
 using BookingSystem.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace BookingSystem.Application.Decorators;
 public class CachedBookingService : IBookingService
@@ -9,8 +12,7 @@ public class CachedBookingService : IBookingService
     private readonly IBookingService _bookingService;
     private readonly ICacheService _cacheService;
     private readonly ILogger<CachedBookingService> _logger;
-
-    // Cache key constants
+    
     private const string BOOKING_BY_ID_KEY = "booking:id:{0}";
     private const string BOOKINGS_BY_USER_KEY = "bookings:user:{0}";
     private const string BOOKINGS_BY_HOTEL_KEY = "bookings:hotel:{0}";
@@ -20,8 +22,7 @@ public class CachedBookingService : IBookingService
     private const string ROOM_AVAILABILITY_KEY = "availability:roomtype:{0}:hotel:{1}:{2}:{3}";
     private const string BOOKING_PREFIX = "booking";
     private const string BOOKINGS_PREFIX = "bookings";
-
-    // Cache expiration times - booking data is more dynamic
+    
     private static readonly TimeSpan BookingCacheExpiration = TimeSpan.FromMinutes(10);
     private static readonly TimeSpan AvailabilityCacheExpiration = TimeSpan.FromMinutes(5);
     private static readonly TimeSpan ListCacheExpiration = TimeSpan.FromMinutes(8);
@@ -36,39 +37,29 @@ public class CachedBookingService : IBookingService
         _logger = logger;
     }
 
-    public async Task<BookingResponseDto> CreateBookingAsync(CreateBookingDto bookingDto)
+    public async Task<Guid> CreateBookingAsync(CreateBookingDto bookingDto)
     {
-        _logger.LogInformation("Creating new booking for user {UserId} at hotel {HotelId}", 
-            bookingDto.UserId, bookingDto.HotelId);
+        _logger.LogInformation("Initiating booking request for user {UserId}", bookingDto.UserId);
         
-        var newBooking = await _bookingService.CreateBookingAsync(bookingDto);
-        
-        // Cache the new booking
-        await CacheBooking(newBooking);
-        
-        // Invalidate related caches
-        await InvalidateBookingRelatedCaches(newBooking);
-        
-        _logger.LogInformation("Booking created and cached with ID: {BookingId}", newBooking.Id);
-        return newBooking;
+        return await _bookingService.CreateBookingAsync(bookingDto);
+    }
+    
+    public async Task<BookingResponseDto?> GetBookingByTrackingIdAsync(Guid trackingId)
+    {
+        return await _bookingService.GetBookingByTrackingIdAsync(trackingId);
     }
 
     public async Task<BookingResponseDto> UpdateBookingAsync(UpdateBookingDto dto)
     {
         _logger.LogInformation("Updating booking with ID: {BookingId}", dto.Id);
         
-        // Get current booking for cache invalidation
         var currentBooking = await GetBookingByIdAsync(dto.Id);
         
         var updatedBooking = await _bookingService.UpdateBookingAsync(dto);
         
-        // Update cache with new data
         await CacheBooking(updatedBooking);
-        
-        // Invalidate related caches
         await InvalidateBookingRelatedCaches(updatedBooking);
         
-        // If dates changed, invalidate availability cache
         if (currentBooking != null && 
             (currentBooking.CheckInDate != updatedBooking.CheckInDate || 
              currentBooking.CheckOutDate != updatedBooking.CheckOutDate))
@@ -84,15 +75,12 @@ public class CachedBookingService : IBookingService
     {
         _logger.LogInformation("Deleting booking with ID: {BookingId}", id);
         
-        // Get booking details before deletion
         var bookingToDelete = await GetBookingByIdAsync(id);
         
         await _bookingService.DeleteBookingAsync(id);
         
-        // Remove from cache
         await _cacheService.RemoveAsync(string.Format(BOOKING_BY_ID_KEY, id));
         
-        // Invalidate related caches
         if (bookingToDelete != null)
         {
             await InvalidateBookingRelatedCaches(bookingToDelete);
@@ -141,10 +129,8 @@ public class CachedBookingService : IBookingService
         
         var bookings = await _bookingService.GetAllBookingsAsync();
         
-        // Cache the result
         await _cacheService.SetAsync(cacheKey, bookings, ListCacheExpiration);
         
-        // Also cache individual bookings
         foreach (var booking in bookings)
         {
             await CacheBooking(booking);
@@ -169,10 +155,8 @@ public class CachedBookingService : IBookingService
         
         var bookings = await _bookingService.GetBookingsByUserIdAsync(userId);
         
-        // Cache the result
         await _cacheService.SetAsync(cacheKey, bookings, ListCacheExpiration);
         
-        // Also cache individual bookings
         foreach (var booking in bookings)
         {
             await CacheBooking(booking);
@@ -197,10 +181,8 @@ public class CachedBookingService : IBookingService
         
         var bookings = await _bookingService.GetBookingsByHotelIdAsync(hotelId);
         
-        // Cache the result
         await _cacheService.SetAsync(cacheKey, bookings, ListCacheExpiration);
         
-        // Also cache individual bookings
         foreach (var booking in bookings)
         {
             await CacheBooking(booking);
@@ -225,10 +207,8 @@ public class CachedBookingService : IBookingService
         
         var bookings = await _bookingService.GetBookingsByRoomTypeIdAsync(roomTypeId);
         
-        // Cache the result
         await _cacheService.SetAsync(cacheKey, bookings, ListCacheExpiration);
         
-        // Also cache individual bookings
         foreach (var booking in bookings)
         {
             await CacheBooking(booking);
@@ -255,10 +235,8 @@ public class CachedBookingService : IBookingService
         
         var bookings = await _bookingService.GetBookingsByDateRangeAsync(startDate, endDate);
         
-        // Cache with shorter expiration as date-based queries are more time-sensitive
         await _cacheService.SetAsync(cacheKey, bookings, TimeSpan.FromMinutes(5));
         
-        // Also cache individual bookings
         foreach (var booking in bookings)
         {
             await CacheBooking(booking);
@@ -271,14 +249,12 @@ public class CachedBookingService : IBookingService
 
     public async Task<bool> CheckRoomTypeAvailabilityAsync(int roomTypeId, int hotelId, DateTime checkInDate, DateTime checkOutDate, int? excludeBookingId = null)
     {
-        // Generate cache key
         var cacheKey = string.Format(ROOM_AVAILABILITY_KEY, 
             roomTypeId, 
             hotelId, 
             checkInDate.ToString("yyyy-MM-dd"), 
             checkOutDate.ToString("yyyy-MM-dd"));
         
-        // Add exclude booking ID to key if provided
         if (excludeBookingId.HasValue)
         {
             cacheKey += $":exclude:{excludeBookingId.Value}";
@@ -294,7 +270,6 @@ public class CachedBookingService : IBookingService
         
         var availability = await _bookingService.CheckRoomTypeAvailabilityAsync(roomTypeId, hotelId, checkInDate, checkOutDate, excludeBookingId);
         
-        // Cache availability with shorter expiration as it's highly dynamic
         await _cacheService.SetAsync(cacheKey, availability.ToString(), AvailabilityCacheExpiration);
         
         _logger.LogDebug("Room availability cached for roomType: {RoomTypeId}, hotel: {HotelId}, available: {Available}", 
@@ -309,10 +284,7 @@ public class CachedBookingService : IBookingService
         
         var cancelledBooking = await _bookingService.CancelBookingAsync(id);
         
-        // Update cache with cancelled booking
         await CacheBooking(cancelledBooking);
-        
-        // Invalidate related caches
         await InvalidateBookingRelatedCaches(cancelledBooking);
         await InvalidateAvailabilityCache(cancelledBooking.RoomTypeId, cancelledBooking.HotelId);
         
@@ -326,17 +298,12 @@ public class CachedBookingService : IBookingService
         
         var updatedBooking = await _bookingService.UpdateBookingStatusAsync(id, statusCode);
         
-        // Update cache with new status
         await CacheBooking(updatedBooking);
-        
-        // Invalidate related caches
         await InvalidateBookingRelatedCaches(updatedBooking);
         
         _logger.LogInformation("Booking status updated and cache refreshed for ID: {BookingId}", id);
         return updatedBooking;
     }
-
-    #region Private Helper Methods
 
     private async Task CacheBooking(BookingResponseDto booking)
     {
@@ -352,19 +319,10 @@ public class CachedBookingService : IBookingService
 
         var tasks = new List<Task>
         {
-            // Invalidate all bookings list
             _cacheService.RemoveAsync(ALL_BOOKINGS_KEY),
-            
-            // Invalidate user-specific bookings
             _cacheService.RemoveAsync(string.Format(BOOKINGS_BY_USER_KEY, booking.UserId)),
-            
-            // Invalidate hotel-specific bookings
             _cacheService.RemoveAsync(string.Format(BOOKINGS_BY_HOTEL_KEY, booking.HotelId)),
-            
-            // Invalidate room type-specific bookings
             _cacheService.RemoveAsync(string.Format(BOOKINGS_BY_ROOMTYPE_KEY, booking.RoomTypeId)),
-            
-            // Invalidate date range queries (remove all date range caches)
             _cacheService.RemoveByPrefixAsync("bookings:daterange:")
         };
 
@@ -374,16 +332,12 @@ public class CachedBookingService : IBookingService
 
     private async Task InvalidateAvailabilityCache(int roomTypeId, int hotelId)
     {
-        // Remove all availability caches for this room type and hotel
         var availabilityPattern = $"availability:roomtype:{roomTypeId}:hotel:{hotelId}:*";
         await _cacheService.RemoveByPatternAsync(availabilityPattern);
         
         _logger.LogDebug("Availability cache invalidated for roomType: {RoomTypeId}, hotel: {HotelId}", roomTypeId, hotelId);
     }
-
-    /// <summary>
-    /// Invalidates all booking-related caches (useful for bulk operations)
-    /// </summary>
+    
     public async Task InvalidateAllBookingCachesAsync()
     {
         var tasks = new List<Task>
@@ -396,6 +350,4 @@ public class CachedBookingService : IBookingService
         await Task.WhenAll(tasks);
         _logger.LogInformation("All booking caches invalidated");
     }
-
-    #endregion
 }

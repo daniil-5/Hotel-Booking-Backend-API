@@ -14,4 +14,5 @@ public class Booking : BaseEntity
     public int GuestCount { get; set; }
     public decimal TotalPrice { get; set; }
     public int Status { get; set; } = (int)BookingStatus.Pending;
+    public Guid TrackingId { get; set; }
 }
