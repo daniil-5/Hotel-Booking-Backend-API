@@ -1,24 +1,28 @@
-using System.Text;
+using BookingSystem.API.BackgroundServices;
 using BookingSystem.Application.Decorators;
-using BookingSystem.Infrastructure.Data;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
 using BookingSystem.Application.Interfaces;
 using BookingSystem.Application.Services;
+using BookingSystem.Application.Settings;
 using BookingSystem.Domain.Entities;
 using BookingSystem.Domain.Interfaces;
 using BookingSystem.Domain.Other;
-using Microsoft.EntityFrameworkCore;
+using BookingSystem.Infrastructure.Data;
+using BookingSystem.Infrastructure.Kafka;
 using BookingSystem.Infrastructure.Repositories;
 using BookingSystem.Infrastructure.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Serilog;
 using Serilog.Events;
+using Serilog;
 using StackExchange.Redis;
+using System.Text;
 
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 var builder = WebApplication.CreateBuilder(args);
 
 #region Logging and Controllers
@@ -47,6 +51,14 @@ builder.Services.AddControllers()
     });
 
 builder.Services.AddEndpointsApiExplorer();
+
+#endregion
+
+#region Kafka Configuration
+
+builder.Services.Configure<KafkaSettings>(builder.Configuration.GetSection("Kafka"));
+builder.Services.AddSingleton<IKafkaProducer, KafkaProducer>();
+builder.Services.AddHostedService<BookingRequestConsumer>();
 
 #endregion
 
