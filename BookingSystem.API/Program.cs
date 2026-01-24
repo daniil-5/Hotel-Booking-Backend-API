@@ -144,7 +144,6 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 // Register main services for use inside decorators
 builder.Services.AddScoped<BookingService>();
 builder.Services.AddScoped<HotelService>();
-builder.Services.AddScoped<RoomService>();
 builder.Services.AddScoped<UserService>();
 
 // Use cached decorator implementations instead of standard services
@@ -177,6 +176,7 @@ builder.Services.AddScoped<IUserService>(provider =>
 );
 
 builder.Services.AddScoped<IRoomTypeService, RoomTypeService>();
+builder.Services.AddScoped<IAmenityService, AmenityService>(); 
 builder.Services.AddScoped<IRoomPricingService, RoomPricingService>();
 builder.Services.AddScoped<DatabaseSeeder>();
 builder.Services.AddScoped<ISerializationService, SerializationService>();

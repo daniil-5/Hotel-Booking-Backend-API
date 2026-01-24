@@ -22,6 +22,60 @@ namespace BookingSystem.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("AmenityHotel", b =>
+                {
+                    b.Property<int>("AmenitiesId")
+                        .HasColumnType("integer")
+                        .HasColumnName("amenities_id");
+
+                    b.Property<int>("HotelsId")
+                        .HasColumnType("integer")
+                        .HasColumnName("hotels_id");
+
+                    b.HasKey("AmenitiesId", "HotelsId")
+                        .HasName("p_k_hotel_amenities");
+
+                    b.HasIndex("HotelsId");
+
+                    b.ToTable("hotel_amenities", (string)null);
+                });
+
+            modelBuilder.Entity("BookingSystem.Domain.Entities.Amenity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("p_k_amenities");
+
+                    b.ToTable("amenities", (string)null);
+                });
+
             modelBuilder.Entity("BookingSystem.Domain.Entities.Booking", b =>
                 {
                     b.Property<int>("Id")
@@ -55,10 +109,6 @@ namespace BookingSystem.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("is_deleted");
 
-                    b.Property<int?>("RoomId")
-                        .HasColumnType("integer")
-                        .HasColumnName("room_id");
-
                     b.Property<int>("RoomTypeId")
                         .HasColumnType("integer")
                         .HasColumnName("room_type_id");
@@ -70,6 +120,10 @@ namespace BookingSystem.Migrations
                     b.Property<decimal>("TotalPrice")
                         .HasColumnType("decimal(18,2)")
                         .HasColumnName("total_price");
+
+                    b.Property<Guid>("TrackingId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tracking_id");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -83,9 +137,6 @@ namespace BookingSystem.Migrations
                         .HasName("p_k_bookings");
 
                     b.HasIndex("HotelId");
-
-                    b.HasIndex("RoomId")
-                        .HasDatabaseName("ix_bookings_room_id");
 
                     b.HasIndex("RoomTypeId");
 
@@ -102,11 +153,6 @@ namespace BookingSystem.Migrations
                         .HasColumnName("id");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Amenities")
-                        .IsRequired()
-                        .HasColumnType("jsonb")
-                        .HasColumnName("amenities");
 
                     b.Property<decimal>("BasePrice")
                         .HasColumnType("decimal(18,2)")
@@ -136,7 +182,7 @@ namespace BookingSystem.Migrations
                         .HasColumnName("name");
 
                     b.Property<decimal>("Rating")
-                        .HasColumnType("numeric")
+                        .HasColumnType("decimal(2,1)")
                         .HasColumnName("rating");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -201,48 +247,6 @@ namespace BookingSystem.Migrations
                     b.ToTable("hotel_photos", (string)null);
                 });
 
-            modelBuilder.Entity("BookingSystem.Domain.Entities.Room", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<bool>("IsAvailable")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_available");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
-
-                    b.Property<string>("RoomNumber")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("room_number");
-
-                    b.Property<int>("RoomTypeId")
-                        .HasColumnType("integer")
-                        .HasColumnName("room_type_id");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.HasKey("Id")
-                        .HasName("p_k_rooms");
-
-                    b.HasIndex("RoomTypeId");
-
-                    b.ToTable("rooms", (string)null);
-                });
-
             modelBuilder.Entity("BookingSystem.Domain.Entities.RoomPricing", b =>
                 {
                     b.Property<int>("Id")
@@ -268,10 +272,6 @@ namespace BookingSystem.Migrations
                         .HasColumnType("decimal(18,2)")
                         .HasColumnName("price");
 
-                    b.Property<int?>("RoomId")
-                        .HasColumnType("integer")
-                        .HasColumnName("room_id");
-
                     b.Property<int>("RoomTypeId")
                         .HasColumnType("integer")
                         .HasColumnName("room_type_id");
@@ -282,8 +282,6 @@ namespace BookingSystem.Migrations
 
                     b.HasKey("Id")
                         .HasName("p_k_room_pricings");
-
-                    b.HasIndex("RoomId");
 
                     b.HasIndex("RoomTypeId");
 
@@ -300,7 +298,7 @@ namespace BookingSystem.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<decimal>("Area")
-                        .HasColumnType("numeric")
+                        .HasColumnType("decimal(18,2)")
                         .HasColumnName("area");
 
                     b.Property<decimal>("BasePrice")
@@ -310,6 +308,10 @@ namespace BookingSystem.Migrations
                     b.Property<int>("Capacity")
                         .HasColumnType("integer")
                         .HasColumnName("capacity");
+
+                    b.Property<int>("Count")
+                        .HasColumnType("integer")
+                        .HasColumnName("count");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -410,6 +412,23 @@ namespace BookingSystem.Migrations
                     b.ToTable("users", (string)null);
                 });
 
+            modelBuilder.Entity("AmenityHotel", b =>
+                {
+                    b.HasOne("BookingSystem.Domain.Entities.Amenity", null)
+                        .WithMany()
+                        .HasForeignKey("AmenitiesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("f_k_hotel_amenities_amenities_amenities_id");
+
+                    b.HasOne("BookingSystem.Domain.Entities.Hotel", null)
+                        .WithMany()
+                        .HasForeignKey("HotelsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("f_k_hotel_amenities_hotels_hotels_id");
+                });
+
             modelBuilder.Entity("BookingSystem.Domain.Entities.Booking", b =>
                 {
                     b.HasOne("BookingSystem.Domain.Entities.Hotel", "Hotel")
@@ -418,11 +437,6 @@ namespace BookingSystem.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("f_k_bookings_hotels_hotel_id");
-
-                    b.HasOne("BookingSystem.Domain.Entities.Room", null)
-                        .WithMany("Bookings")
-                        .HasForeignKey("RoomId")
-                        .HasConstraintName("f_k_bookings_rooms_room_id");
 
                     b.HasOne("BookingSystem.Domain.Entities.RoomType", "RoomType")
                         .WithMany("Bookings")
@@ -457,25 +471,8 @@ namespace BookingSystem.Migrations
                     b.Navigation("Hotel");
                 });
 
-            modelBuilder.Entity("BookingSystem.Domain.Entities.Room", b =>
-                {
-                    b.HasOne("BookingSystem.Domain.Entities.RoomType", "RoomType")
-                        .WithMany("Rooms")
-                        .HasForeignKey("RoomTypeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("f_k_rooms_room_types_room_type_id");
-
-                    b.Navigation("RoomType");
-                });
-
             modelBuilder.Entity("BookingSystem.Domain.Entities.RoomPricing", b =>
                 {
-                    b.HasOne("BookingSystem.Domain.Entities.Room", null)
-                        .WithMany("Pricing")
-                        .HasForeignKey("RoomId")
-                        .HasConstraintName("f_k_room_pricings_rooms_room_id");
-
                     b.HasOne("BookingSystem.Domain.Entities.RoomType", "RoomType")
                         .WithMany("Pricing")
                         .HasForeignKey("RoomTypeId")
@@ -507,20 +504,11 @@ namespace BookingSystem.Migrations
                     b.Navigation("RoomTypes");
                 });
 
-            modelBuilder.Entity("BookingSystem.Domain.Entities.Room", b =>
-                {
-                    b.Navigation("Bookings");
-
-                    b.Navigation("Pricing");
-                });
-
             modelBuilder.Entity("BookingSystem.Domain.Entities.RoomType", b =>
                 {
                     b.Navigation("Bookings");
 
                     b.Navigation("Pricing");
-
-                    b.Navigation("Rooms");
                 });
 
             modelBuilder.Entity("BookingSystem.Domain.Entities.User", b =>

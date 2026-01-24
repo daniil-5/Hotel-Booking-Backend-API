@@ -1,7 +1,9 @@
 using System.ComponentModel.DataAnnotations;
+using BookingSystem.Application.DTOs.Amenity;
 using BookingSystem.Application.DTOs.HotelPhoto;
+using BookingSystem.Domain.Entities;
 
-namespace BookingSystem.Application.Hotel;
+namespace BookingSystem.Application.DTOs.Hotel;
 
 public class CreateHotelDto
 {
@@ -23,11 +25,9 @@ public class CreateHotelDto
     public decimal BasePrice { get; set; }
     
     [Required]
-    public ICollection<string> Amenities { get; set; } = new List<string>();
+    public ICollection<AmenityDto> Amenities { get; set; } = new List<AmenityDto>();
     
-    [Required]
     public ICollection<Domain.Entities.RoomType> RoomTypes { get; set; } = new List<Domain.Entities.RoomType>();
     
-    [Required]
     public ICollection<HotelPhotoDto> Photos { get; set; } = new List<HotelPhotoDto>();
 }

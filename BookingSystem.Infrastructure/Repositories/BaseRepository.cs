@@ -1,8 +1,8 @@
 using BookingSystem.Domain.Interfaces;
+using BookingSystem.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 using System.Reflection;
-using BookingSystem.Infrastructure.Data;
 
 namespace BookingSystem.Infrastructure.Repositories
 {
@@ -16,17 +16,13 @@ namespace BookingSystem.Infrastructure.Repositories
         {
             _context = context;
             _dbSet = context.Set<T>();
-            
-            // Check if the entity has an IsDeleted property
             _isDeletedProperty = typeof(T).GetProperty("IsDeleted");
         }
-
-        // Apply IsDeleted filter if the property exists
+        
         protected IQueryable<T> ApplySoftDeleteFilter(IQueryable<T> query)
         {
             if (_isDeletedProperty != null)
             {
-                // Create expression: entity => (bool)entity.IsDeleted == false
                 var parameter = Expression.Parameter(typeof(T), "entity");
                 var property = Expression.Property(parameter, _isDeletedProperty);
                 var falseValue = Expression.Constant(false);
@@ -43,20 +39,19 @@ namespace BookingSystem.Infrastructure.Repositories
         {
             var entity = await _dbSet.FindAsync(id);
             
-            // Check if entity is soft-deleted
             if (entity != null && _isDeletedProperty != null)
             {
                 var isDeleted = (bool)_isDeletedProperty.GetValue(entity);
                 if (isDeleted)
                 {
-                    return null; // Return null for soft-deleted entities
+                    return null;
                 }
             }
             
             return entity;
         }
 
-        public async Task<T> GetByIdAsync(int id, Func<IQueryable<T>, IQueryable<T>> include)
+        public async Task<T> GetByIdAsync(int id, Func<IQueryable<T>, IQueryable<T>>? include = null)
         {
             var query = _dbSet.AsQueryable();
             query = ApplySoftDeleteFilter(query);
@@ -66,7 +61,6 @@ namespace BookingSystem.Infrastructure.Repositories
                 query = include(query);
             }
             
-            // Create an expression to filter by ID
             var parameter = Expression.Parameter(typeof(T), "x");
             var property = Expression.Property(parameter, "Id");
             var constant = Expression.Constant(id);
@@ -78,7 +72,7 @@ namespace BookingSystem.Infrastructure.Repositories
 
         public async Task<IEnumerable<T>> GetAllAsync()
         {
-            var query = _dbSet.AsQueryable();
+            var query = _dbSet.AsNoTracking().AsQueryable();
             query = ApplySoftDeleteFilter(query);
             return await query.ToListAsync();
         }
@@ -168,7 +162,6 @@ namespace BookingSystem.Infrastructure.Repositories
 
         public async Task AddAsync(T entity)
         {
-            // Set IsDeleted to false for new entities if the property exists
             if (_isDeletedProperty != null)
             {
                 _isDeletedProperty.SetValue(entity, false);
@@ -189,12 +182,10 @@ namespace BookingSystem.Infrastructure.Repositories
             var entity = await GetByIdAsync(id);
             if (entity != null)
             {
-                // If the entity has IsDeleted property, perform soft delete
                 if (_isDeletedProperty != null)
                 {
                     _isDeletedProperty.SetValue(entity, true);
                     
-                    // If the entity has UpdatedAt property, update it
                     var updatedAtProperty = typeof(T).GetProperty("UpdatedAt");
                     if (updatedAtProperty != null && updatedAtProperty.PropertyType == typeof(DateTime?))
                     {
@@ -205,7 +196,6 @@ namespace BookingSystem.Infrastructure.Repositories
                 }
                 else
                 {
-                    // If no IsDeleted property, perform hard delete
                     _dbSet.Remove(entity);
                 }
                 
@@ -213,7 +203,6 @@ namespace BookingSystem.Infrastructure.Repositories
             }
         }
         
-        // Add a method for permanent deletion if needed
         public async Task DeletePermanentlyAsync(int id)
         {
             var entity = await _dbSet.FindAsync(id);
@@ -222,6 +211,11 @@ namespace BookingSystem.Infrastructure.Repositories
                 _dbSet.Remove(entity);
                 await _context.SaveChangesAsync();
             }
+        }
+        
+        public async Task<T?> FindAsync(Expression<Func<T, bool>> predicate)
+        {
+            return await _dbSet.FirstOrDefaultAsync(predicate);
         }
     }
 }
