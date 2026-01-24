@@ -18,7 +18,7 @@ namespace BookingSystem.Infrastructure.Repositories
             _dbSet = context.Set<T>();
             _isDeletedProperty = typeof(T).GetProperty("IsDeleted");
         }
-        
+
         protected IQueryable<T> ApplySoftDeleteFilter(IQueryable<T> query)
         {
             if (_isDeletedProperty != null)
@@ -31,14 +31,14 @@ namespace BookingSystem.Infrastructure.Repositories
 
                 query = query.Where(lambda);
             }
-            
+
             return query;
         }
 
         public async Task<T> GetByIdAsync(int id)
         {
             var entity = await _dbSet.FindAsync(id);
-            
+
             if (entity != null && _isDeletedProperty != null)
             {
                 var isDeleted = (bool)_isDeletedProperty.GetValue(entity);
@@ -47,7 +47,7 @@ namespace BookingSystem.Infrastructure.Repositories
                     return null;
                 }
             }
-            
+
             return entity;
         }
 
@@ -55,18 +55,18 @@ namespace BookingSystem.Infrastructure.Repositories
         {
             var query = _dbSet.AsQueryable();
             query = ApplySoftDeleteFilter(query);
-            
+
             if (include != null)
             {
                 query = include(query);
             }
-            
+
             var parameter = Expression.Parameter(typeof(T), "x");
             var property = Expression.Property(parameter, "Id");
             var constant = Expression.Constant(id);
             var equal = Expression.Equal(property, constant);
             var lambda = Expression.Lambda<Func<T, bool>>(equal, parameter);
-            
+
             return await query.FirstOrDefaultAsync(lambda);
         }
 
@@ -85,22 +85,22 @@ namespace BookingSystem.Infrastructure.Repositories
         }
 
         public async Task<IEnumerable<T>> GetAllAsync(
-            Expression<Func<T, bool>> predicate = null, 
+            Expression<Func<T, bool>> predicate = null,
             Func<IQueryable<T>, IQueryable<T>> include = null)
         {
             IQueryable<T> query = _dbSet;
             query = ApplySoftDeleteFilter(query);
-            
+
             if (predicate != null)
             {
                 query = query.Where(predicate);
             }
-            
+
             if (include != null)
             {
                 query = include(query);
             }
-            
+
             return await query.ToListAsync();
         }
 
@@ -112,17 +112,17 @@ namespace BookingSystem.Infrastructure.Repositories
         }
 
         public async Task<T> FirstOrDefaultAsync(
-            Expression<Func<T, bool>> predicate, 
+            Expression<Func<T, bool>> predicate,
             Func<IQueryable<T>, IQueryable<T>> include)
         {
             IQueryable<T> query = _dbSet;
             query = ApplySoftDeleteFilter(query);
-            
+
             if (include != null)
             {
                 query = include(query);
             }
-            
+
             return await query.FirstOrDefaultAsync(predicate);
         }
 
@@ -130,27 +130,27 @@ namespace BookingSystem.Infrastructure.Repositories
         {
             var query = _dbSet.AsQueryable();
             query = ApplySoftDeleteFilter(query);
-            
+
             if (predicate == null)
             {
                 return await query.CountAsync();
             }
-            
+
             return await query.CountAsync(predicate);
         }
 
         public async Task<int> CountAsync(
-            Expression<Func<T, bool>> predicate, 
+            Expression<Func<T, bool>> predicate,
             Func<IQueryable<T>, IQueryable<T>> include)
         {
             IQueryable<T> query = _dbSet;
             query = ApplySoftDeleteFilter(query);
-            
+
             if (include != null)
             {
                 query = include(query);
             }
-            
+
             return await query.CountAsync(predicate);
         }
 
@@ -166,7 +166,7 @@ namespace BookingSystem.Infrastructure.Repositories
             {
                 _isDeletedProperty.SetValue(entity, false);
             }
-            
+
             await _dbSet.AddAsync(entity);
             await _context.SaveChangesAsync();
         }
@@ -185,24 +185,24 @@ namespace BookingSystem.Infrastructure.Repositories
                 if (_isDeletedProperty != null)
                 {
                     _isDeletedProperty.SetValue(entity, true);
-                    
+
                     var updatedAtProperty = typeof(T).GetProperty("UpdatedAt");
                     if (updatedAtProperty != null && updatedAtProperty.PropertyType == typeof(DateTime?))
                     {
                         updatedAtProperty.SetValue(entity, DateTime.UtcNow);
                     }
-                    
+
                     _dbSet.Update(entity);
                 }
                 else
                 {
                     _dbSet.Remove(entity);
                 }
-                
+
                 await _context.SaveChangesAsync();
             }
         }
-        
+
         public async Task DeletePermanentlyAsync(int id)
         {
             var entity = await _dbSet.FindAsync(id);
@@ -212,7 +212,7 @@ namespace BookingSystem.Infrastructure.Repositories
                 await _context.SaveChangesAsync();
             }
         }
-        
+
         public async Task<T?> FindAsync(Expression<Func<T, bool>> predicate)
         {
             return await _dbSet.FirstOrDefaultAsync(predicate);

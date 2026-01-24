@@ -11,7 +11,7 @@ public class KafkaProducer : IKafkaProducer
 {
     private readonly ProducerConfig _config;
     private readonly ILogger<KafkaProducer> _logger;
-    
+
     public KafkaProducer(IOptions<KafkaSettings> kafkaSettings, ILogger<KafkaProducer> logger)
     {
         _config = new ProducerConfig
@@ -25,20 +25,20 @@ public class KafkaProducer : IKafkaProducer
     {
         _logger.LogInformation("Preparing to send Kafka message. Topic: {Topic}, Key: {Key}", topic, key);
 
-        try 
+        try
         {
             using var producer = new ProducerBuilder<string, string>(_config).Build();
             var json = JsonSerializer.Serialize(message);
-            
-            var deliveryResult = await producer.ProduceAsync(topic, new Message<string, string> 
-            { 
-                Key = key, 
-                Value = json 
+
+            var deliveryResult = await producer.ProduceAsync(topic, new Message<string, string>
+            {
+                Key = key,
+                Value = json
             });
-            
-            _logger.LogInformation("Message delivered successfully to {Topic} [[{Partition}]] @ {Offset}", 
-                deliveryResult.Topic, 
-                deliveryResult.Partition.Value, 
+
+            _logger.LogInformation("Message delivered successfully to {Topic} [[{Partition}]] @ {Offset}",
+                deliveryResult.Topic,
+                deliveryResult.Partition.Value,
                 deliveryResult.Offset.Value);
         }
         catch (ProduceException<string, string> ex)

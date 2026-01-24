@@ -24,7 +24,7 @@ public class BookingsController : ControllerBase
         {
             return Unauthorized("User ID not found in token");
         }
-        
+
         if (User.IsInRole("Manager") || User.IsInRole("Admin"))
         {
             var allBookings = await _bookingService.GetAllBookingsAsync();
@@ -41,21 +41,21 @@ public class BookingsController : ControllerBase
     public async Task<ActionResult<BookingResponseDto>> GetBooking(int id)
     {
         var booking = await _bookingService.GetBookingByIdAsync(id);
-        
+
         if (booking == null)
             return NotFound();
-        
+
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId))
         {
             return Unauthorized("User ID not found in token");
         }
-        
+
         if (User.IsInRole("Manager") || User.IsInRole("Admin"))
         {
             return Ok(booking);
         }
-        
+
         if (booking.UserId != int.Parse(userId))
         {
             return Forbid();
@@ -76,12 +76,12 @@ public class BookingsController : ControllerBase
             }
 
             bookingDto.UserId = int.Parse(userId);
-            
+
             var trackingId = await _bookingService.CreateBookingAsync(bookingDto);
-            
-            return Accepted(new 
-            { 
-                TrackingId = trackingId, 
+
+            return Accepted(new
+            {
+                TrackingId = trackingId,
                 Message = "Booking request submitted successfully. Please check status later.",
                 StatusUrl = $"/api/bookings/status/{trackingId}"
             });
@@ -91,7 +91,7 @@ public class BookingsController : ControllerBase
             return BadRequest(ex.Message);
         }
     }
-    
+
     [HttpGet("status/{trackingId}")]
     public async Task<IActionResult> GetBookingStatus(Guid trackingId)
     {
@@ -111,19 +111,19 @@ public class BookingsController : ControllerBase
     {
         try
         {
-            if (id != bookingDto.Id) 
+            if (id != bookingDto.Id)
                 return BadRequest("ID mismatch");
-            
+
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
             {
                 return Unauthorized("User ID not found in token");
             }
-            
+
             var existingBooking = await _bookingService.GetBookingByIdAsync(id);
             if (existingBooking == null)
                 return NotFound();
-            
+
             if (!User.IsInRole("Manager") && !User.IsInRole("Admin"))
             {
                 if (existingBooking.UserId != int.Parse(userId))
@@ -151,11 +151,11 @@ public class BookingsController : ControllerBase
             {
                 return Unauthorized("User ID not found in token");
             }
-            
+
             var existingBooking = await _bookingService.GetBookingByIdAsync(id);
             if (existingBooking == null)
                 return NotFound();
-            
+
             if (!User.IsInRole("Manager") && !User.IsInRole("Admin"))
             {
                 if (existingBooking.UserId != int.Parse(userId))

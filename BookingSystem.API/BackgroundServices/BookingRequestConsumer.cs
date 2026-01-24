@@ -41,13 +41,13 @@ namespace BookingSystem.API.BackgroundServices
             var config = new ConsumerConfig
             {
                 BootstrapServers = _settings.BootstrapServers,
-                GroupId = _settings.GroupId, 
-                AutoOffsetReset = AutoOffsetReset.Earliest, 
-                EnableAutoCommit = false 
+                GroupId = _settings.GroupId,
+                AutoOffsetReset = AutoOffsetReset.Earliest,
+                EnableAutoCommit = false
             };
 
             using var consumer = new ConsumerBuilder<string, string>(config).Build();
-            
+
             try
             {
                 consumer.Subscribe(_requestTopic);
@@ -58,17 +58,17 @@ namespace BookingSystem.API.BackgroundServices
                     try
                     {
                         var consumeResult = consumer.Consume(token);
-                        
+
                         if (consumeResult?.Message == null) continue;
 
                         var messageValue = consumeResult.Message.Value;
                         _logger.LogInformation("Received booking request. Key: {Key}", consumeResult.Message.Key);
-                        
+
                         using (var scope = _serviceProvider.CreateScope())
                         {
                             await ProcessBookingRequest(messageValue, scope);
                         }
-                        
+
                         consumer.Commit(consumeResult);
                     }
                     catch (ConsumeException e)
@@ -91,7 +91,7 @@ namespace BookingSystem.API.BackgroundServices
         private async Task ProcessBookingRequest(string jsonMessage, IServiceScope scope)
         {
             CreateBookingCommand? command;
-            try 
+            try
             {
                 command = JsonSerializer.Deserialize<CreateBookingCommand>(jsonMessage);
                 if (command == null) throw new JsonException("Deserialized command is null");
@@ -101,14 +101,14 @@ namespace BookingSystem.API.BackgroundServices
                 _logger.LogError(ex, "Failed to deserialize message: {Json}", jsonMessage);
                 return;
             }
-            
+
             var bookingRepo = scope.ServiceProvider.GetRequiredService<IRepository<Booking>>();
             var roomTypeRepo = scope.ServiceProvider.GetRequiredService<IRepository<RoomType>>();
             var pricingRepo = scope.ServiceProvider.GetRequiredService<IRepository<RoomPricing>>();
             var producer = scope.ServiceProvider.GetRequiredService<IKafkaProducer>();
 
             _logger.LogInformation("Processing Booking Request {TrackingId} for RoomType {RoomTypeId}", command.TrackingId, command.RoomTypeId);
-            
+
             var roomType = await roomTypeRepo.GetByIdAsync(command.RoomTypeId);
             if (roomType == null)
             {
@@ -121,8 +121,8 @@ namespace BookingSystem.API.BackgroundServices
                 await SendResultAsync(producer, command.TrackingId, false, $"Max capacity is {roomType.Capacity}");
                 return;
             }
-            
-            var overlappingBookings = await bookingRepo.CountAsync(b => 
+
+            var overlappingBookings = await bookingRepo.CountAsync(b =>
                 b.RoomTypeId == command.RoomTypeId &&
                 b.Status != (int)BookingStatus.Cancelled &&
                 b.CheckInDate < command.CheckOutDate &&
@@ -135,9 +135,9 @@ namespace BookingSystem.API.BackgroundServices
                 await SendResultAsync(producer, command.TrackingId, false, "No rooms available for selected dates");
                 return;
             }
-            
+
             decimal totalPrice = await CalculatePrice(pricingRepo, roomType, command.CheckInDate, command.CheckOutDate);
-            
+
             var booking = new Booking
             {
                 UserId = command.UserId,
@@ -153,9 +153,9 @@ namespace BookingSystem.API.BackgroundServices
             };
 
             await bookingRepo.AddAsync(booking);
-            
+
             _logger.LogInformation("Booking created successfully. ID: {BookingId}, TrackingId: {TrackingId}", booking.Id, command.TrackingId);
-            
+
             await SendResultAsync(producer, command.TrackingId, true, "Booking Confirmed", booking.Id);
         }
 
@@ -169,7 +169,7 @@ namespace BookingSystem.API.BackgroundServices
                 BookingId = bookingId,
                 ProcessedAt = DateTime.UtcNow
             };
-            
+
             await producer.SendMessageAsync(_resultTopic, trackingId.ToString(), resultEvent);
         }
 
@@ -177,8 +177,8 @@ namespace BookingSystem.API.BackgroundServices
         {
             decimal totalPrice = 0;
             int nightCount = (int)(checkOut.Date - checkIn.Date).TotalDays;
-            
-            var pricingRecords = await pricingRepo.GetAllAsync(rp => 
+
+            var pricingRecords = await pricingRepo.GetAllAsync(rp =>
                 rp.RoomTypeId == roomType.Id &&
                 rp.Date >= checkIn.Date &&
                 rp.Date < checkOut.Date);
@@ -187,7 +187,7 @@ namespace BookingSystem.API.BackgroundServices
             {
                 var coveredDates = pricingRecords.Select(p => p.Date.Date).ToHashSet();
                 totalPrice += pricingRecords.Sum(p => p.Price);
-                
+
                 for (var date = checkIn.Date; date < checkOut.Date; date = date.AddDays(1))
                 {
                     if (!coveredDates.Contains(date))
@@ -198,7 +198,7 @@ namespace BookingSystem.API.BackgroundServices
             {
                 totalPrice = roomType.BasePrice * nightCount;
             }
-            
+
             return totalPrice;
         }
     }

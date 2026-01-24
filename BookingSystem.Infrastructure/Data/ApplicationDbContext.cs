@@ -6,8 +6,8 @@ namespace BookingSystem.Infrastructure.Data
     public class AppDbContext : DbContext
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
-        protected AppDbContext() {}
-        
+        protected AppDbContext() { }
+
         public DbSet<Hotel> Hotels { get; set; }
         public DbSet<RoomType> RoomTypes { get; set; }
         public DbSet<Booking> Bookings { get; set; }
@@ -53,37 +53,37 @@ namespace BookingSystem.Infrastructure.Data
                 .WithMany(u => u.Bookings)
                 .HasForeignKey(b => b.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
-            
+
             // Hotel - Booking relationship
             modelBuilder.Entity<Booking>()
                 .HasOne(b => b.Hotel)
                 .WithMany(h => h.Bookings)
                 .HasForeignKey(b => b.HotelId)
                 .OnDelete(DeleteBehavior.Restrict);
-                
+
             // RoomType - Booking relationship
             modelBuilder.Entity<Booking>()
                 .HasOne(b => b.RoomType)
                 .WithMany(rt => rt.Bookings)
                 .HasForeignKey(b => b.RoomTypeId)
                 .OnDelete(DeleteBehavior.Restrict);
-            
+
             modelBuilder.Entity<Booking>()
                 .Property(b => b.TotalPrice)
                 .HasColumnType("decimal(18,2)");
-                
+
             modelBuilder.Entity<RoomPricing>()
                 .Property(rp => rp.Price)
                 .HasColumnType("decimal(18,2)");
-                
+
             modelBuilder.Entity<RoomType>()
                 .Property(rt => rt.BasePrice)
                 .HasColumnType("decimal(18,2)");
-                
+
             modelBuilder.Entity<RoomType>()
                 .Property(rt => rt.Area)
                 .HasColumnType("decimal(18,2)");
-            
+
             modelBuilder.Entity<Hotel>()
                 .Property(h => h.BasePrice)
                 .HasColumnType("decimal(18,2)");
@@ -91,11 +91,11 @@ namespace BookingSystem.Infrastructure.Data
             modelBuilder.Entity<Hotel>()
                 .Property(h => h.Rating)
                 .HasColumnType("decimal(2,1)");
-            
+
             foreach (var entity in modelBuilder.Model.GetEntityTypes())
             {
                 entity.SetTableName(entity.GetTableName().ToSnakeCase());
-                
+
                 foreach (var property in entity.GetProperties())
                 {
                     property.SetColumnName(property.Name.ToSnakeCase());
@@ -119,9 +119,9 @@ namespace BookingSystem.Infrastructure.Data
         public static string ToSnakeCase(this string input)
         {
             if (string.IsNullOrEmpty(input)) return input;
-            return string.Concat(input.Select((c, i) => 
-                i > 0 && char.IsUpper(c) 
-                    ? "_" + c.ToString().ToLower() 
+            return string.Concat(input.Select((c, i) =>
+                i > 0 && char.IsUpper(c)
+                    ? "_" + c.ToString().ToLower()
                     : c.ToString().ToLower()));
         }
     }

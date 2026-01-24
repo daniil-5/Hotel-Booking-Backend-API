@@ -9,8 +9,8 @@ namespace BookingSystem.Infrastructure.Repositories
     public class UserRepository : BaseRepository<User>, IUserRepository
     {
         private readonly AppDbContext _dbContext;
-        
-        public UserRepository(AppDbContext context) : base(context) 
+
+        public UserRepository(AppDbContext context) : base(context)
         {
             _dbContext = context;
         }
@@ -19,7 +19,7 @@ namespace BookingSystem.Infrastructure.Repositories
         {
             return await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == email && !u.IsDeleted);
         }
-        
+
         public async Task<(IEnumerable<User> users, int totalCount)> SearchUsersAsync(
             Expression<Func<User, bool>> filter = null,
             Func<IQueryable<User>, IOrderedQueryable<User>> orderBy = null,
@@ -27,28 +27,28 @@ namespace BookingSystem.Infrastructure.Repositories
             int pageSize = 10)
         {
             var query = _dbContext.Users.AsQueryable();
-            
+
             if (filter != null)
             {
                 query = query.Where(filter);
             }
-            
+
             query = query.Where(u => !u.IsDeleted);
-            
+
             var totalCount = await query.CountAsync();
-            
+
             var orderedQuery = orderBy != null
                 ? orderBy(query)
                 : query.OrderByDescending(u => u.CreatedAt);
-            
+
             var users = await orderedQuery
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
-            
+
             return (users, totalCount);
         }
-        
+
         public async Task<User> GetUserWithDetailsAsync(int userId)
         {
             return await _dbContext.Users
@@ -58,7 +58,7 @@ namespace BookingSystem.Infrastructure.Repositories
                     .ThenInclude(b => b.RoomType)
                 .FirstOrDefaultAsync(u => u.Id == userId && !u.IsDeleted);
         }
-        
+
         public async Task<bool> EmailExistsAsync(string email)
         {
             return await _dbContext.Users.AnyAsync(u => u.Email == email && !u.IsDeleted);

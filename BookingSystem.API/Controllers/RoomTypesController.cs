@@ -92,7 +92,7 @@ public class RoomTypesController : ControllerBase
         {
             return BadRequest("ID mismatch");
         }
-        
+
         try
         {
             var updatedRoomType = await _roomTypeService.UpdateRoomTypeAsync(roomTypeDto);

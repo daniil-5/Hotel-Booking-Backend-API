@@ -24,11 +24,11 @@ namespace BookingSystem.Tests.Services
         public async Task CreateRoomPricingAsync_ShouldAddAndReturnDto()
         {
             // Arrange
-            var dto = new CreateRoomPricingDto 
-            { 
-                RoomTypeId = 1, 
-                Price = 100.50m, 
-                Date = DateTime.Today 
+            var dto = new CreateRoomPricingDto
+            {
+                RoomTypeId = 1,
+                Price = 100.50m,
+                Date = DateTime.Today
             };
 
             // Act
@@ -48,20 +48,20 @@ namespace BookingSystem.Tests.Services
         public async Task UpdateRoomPricingAsync_ShouldUpdateEntity()
         {
             // Arrange
-            var existingEntity = new RoomPricing 
-            { 
-                Id = 1, 
-                RoomTypeId = 1, 
-                Price = 50, 
-                Date = DateTime.Today.AddDays(-1) 
+            var existingEntity = new RoomPricing
+            {
+                Id = 1,
+                RoomTypeId = 1,
+                Price = 50,
+                Date = DateTime.Today.AddDays(-1)
             };
 
-            var updateDto = new UpdateRoomPricingDto 
-            { 
-                Id = 1, 
-                RoomTypeId = 2, 
-                Price = 75.00m, 
-                Date = DateTime.Today 
+            var updateDto = new UpdateRoomPricingDto
+            {
+                Id = 1,
+                RoomTypeId = 2,
+                Price = 75.00m,
+                Date = DateTime.Today
             };
 
             _mockRepo.Setup(r => r.GetByIdAsync(1))
@@ -75,7 +75,7 @@ namespace BookingSystem.Tests.Services
             Assert.Equal(2, result.RoomTypeId);
             Assert.Equal(75.00m, existingEntity.Price);
             Assert.Equal(2, existingEntity.RoomTypeId);
-            
+
             _mockRepo.Verify(r => r.UpdateAsync(existingEntity), Times.Once);
         }
 

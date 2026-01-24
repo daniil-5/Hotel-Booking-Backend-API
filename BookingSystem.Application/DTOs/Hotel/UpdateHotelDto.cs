@@ -2,7 +2,7 @@ using BookingSystem.Application.DTOs.Amenity;
 
 namespace BookingSystem.Application.DTOs.Hotel;
 
-public class UpdateHotelDto: CreateHotelDto
+public class UpdateHotelDto : CreateHotelDto
 {
     public int Id { get; set; }
     public string Name { get; set; }

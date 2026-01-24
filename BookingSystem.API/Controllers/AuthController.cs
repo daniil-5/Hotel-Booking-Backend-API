@@ -23,10 +23,10 @@ public class AuthController : ControllerBase
         try
         {
             var response = await _authService.Register(registerDto);
-            
+
             // SetTokenCookie(response.Token);
             // response.Token = null;
-            
+
             return Ok(response);
         }
         catch (Exception ex)
@@ -41,10 +41,10 @@ public class AuthController : ControllerBase
         try
         {
             var response = await _authService.Login(loginDto);
-            
+
             // SetTokenCookie(response.Token);
             // response.Token = null;
-            
+
             return Ok(response);
         }
         catch (Exception ex)
@@ -52,7 +52,7 @@ public class AuthController : ControllerBase
             return Unauthorized(ex.Message);
         }
     }
-    
+
     [HttpPost("logout")]
     public IActionResult Logout()
     {
@@ -63,14 +63,14 @@ public class AuthController : ControllerBase
             SameSite = SameSiteMode.Strict,
             Path = "/"
         });
-        
+
         return Ok(new { message = "Logged out successfully" });
     }
-    
+
     private void SetTokenCookie(string token)
     {
         var expirationDays = _configuration.GetValue<int>("JwtSettings:DurationInDays", 7);
-        
+
         var cookieOptions = new CookieOptions
         {
             HttpOnly = true, // Prevents client-side JS from reading the cookie 
@@ -79,7 +79,7 @@ public class AuthController : ControllerBase
             SameSite = SameSiteMode.Strict, // Prevents CSRF
             Path = "/" // Available across the entire site
         };
-        
+
         Response.Cookies.Append("X-Access-Token", token, cookieOptions);
     }
     [HttpGet("current")]

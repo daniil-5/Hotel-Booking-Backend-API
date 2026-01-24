@@ -57,7 +57,7 @@ public class HotelPhotosController : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while retrieving the photo");
         }
     }
-    
+
     [HttpGet("hotel/{hotelId}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<HotelPhotoDto>>> GetByHotelId(int hotelId)
@@ -73,7 +73,7 @@ public class HotelPhotosController : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while retrieving the photos");
         }
     }
-    
+
     [HttpPost]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status201Created)]
@@ -100,9 +100,9 @@ public class HotelPhotosController : ControllerBase
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<HotelPhotoDto>> UploadPhoto(
-        IFormFile file, 
-        [FromQuery] int hotelId, 
-        [FromQuery] string description = null, 
+        IFormFile file,
+        [FromQuery] int hotelId,
+        [FromQuery] string description = null,
         [FromQuery] bool isMain = false)
     {
         try
@@ -128,7 +128,7 @@ public class HotelPhotosController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<IEnumerable<HotelPhotoDto>>> UploadMultiplePhotos(
-        [FromForm] List<IFormFile> files, 
+        [FromForm] List<IFormFile> files,
         [FromQuery] int hotelId)
     {
         try
@@ -149,7 +149,7 @@ public class HotelPhotosController : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while uploading the photos");
         }
     }
-    
+
     [HttpPut("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -174,7 +174,7 @@ public class HotelPhotosController : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while updating the photo");
         }
     }
-    
+
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -195,7 +195,7 @@ public class HotelPhotosController : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while deleting the photo");
         }
     }
-    
+
     [HttpPut("{id}/set_main")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -237,7 +237,7 @@ public class HotelPhotosController : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while getting the transformed image URL");
         }
     }
-    
+
     [HttpPost("sync/{hotelId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]

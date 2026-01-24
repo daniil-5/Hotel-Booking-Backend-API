@@ -9,5 +9,5 @@ public interface ICacheService
     Task RemoveByPrefixAsync(string prefix);
     Task<bool> ExistsAsync(string key);
     Task<TimeSpan?> GetTtlAsync(string key);
-    
+
 }

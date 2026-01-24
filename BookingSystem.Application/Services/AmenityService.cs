@@ -22,11 +22,11 @@ public class AmenityService : IAmenityService
         {
             throw new InvalidOperationException($"Amenity '{amenityDto.Name}' already exists.");
         }
-        
+
         var amenity = amenityDto.ToEntity();
 
         await _amenityRepository.AddAsync(amenity);
-        
+
         return amenity.ToDto();
     }
 
@@ -40,7 +40,7 @@ public class AmenityService : IAmenityService
         existingAmenity.Description = amenityDto.Description;
 
         await _amenityRepository.UpdateAsync(existingAmenity);
-        
+
         return existingAmenity.ToDto();
     }
 

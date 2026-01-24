@@ -10,32 +10,32 @@ namespace BookingSystem.Infrastructure.Data
         private readonly AppDbContext _context;
         private readonly ILogger<DatabaseSeeder> _logger;
         private readonly Random _random = new Random();
-        
+
         private readonly DateTime _baseDate = DateTime.UtcNow;
 
         private readonly string[] _amenityNames = {
-            "Free Wi-Fi", "Swimming Pool", "Gym", "Spa", "Parking", "Restaurant", 
-            "Bar", "24/7 Front Desk", "Room Service", "Airport Shuttle", 
-            "Air Conditioning", "Pet Friendly", "Conference Room", "Sea View", 
+            "Free Wi-Fi", "Swimming Pool", "Gym", "Spa", "Parking", "Restaurant",
+            "Bar", "24/7 Front Desk", "Room Service", "Airport Shuttle",
+            "Air Conditioning", "Pet Friendly", "Conference Room", "Sea View",
             "Breakfast Included", "Smart TV", "Mini Bar", "Coffee Maker"
         };
 
         private readonly string[] _hotelNames = {
-            "Grand Plaza Hotel", "Seaside Resort", "Mountain View Lodge", "City Center Inn", 
+            "Grand Plaza Hotel", "Seaside Resort", "Mountain View Lodge", "City Center Inn",
             "Golden Gate Suites", "Riverside Retreat", "Royal Palace Hotel", "Sunset Bay Resort",
             "The Metropolitan", "Harbor View Hotel", "Ocean Paradise", "Forest Hills Lodge"
         };
-        
+
         private readonly string[] _locations = {
             "New York, NY", "Miami, FL", "Denver, CO", "San Francisco, CA", "Chicago, IL",
             "Boston, MA", "Seattle, WA", "Las Vegas, NV", "Austin, TX", "New Orleans, LA"
         };
-        
+
         private readonly string[] _roomTypeNames = {
-            "Standard", "Deluxe", "Suite", "Family Room", "Penthouse", "Executive", 
+            "Standard", "Deluxe", "Suite", "Family Room", "Penthouse", "Executive",
             "Junior Suite", "Studio", "Connecting Room", "Accessible Room"
         };
-        
+
         private readonly string[] _photoUrls = {
             "https://images.unsplash.com/photo-1566073771259-6a8506099945",
             "https://images.unsplash.com/photo-1564501049412-61c2a3083791",
@@ -57,10 +57,10 @@ namespace BookingSystem.Infrastructure.Data
                 await SeedAmenitiesAsync();
                 await SeedHotelsAsync();
                 await SeedHotelPhotosAsync();
-                await SeedRoomTypesAsync(); 
+                await SeedRoomTypesAsync();
                 await SeedRoomPricingsAsync();
                 await SeedBookingsAsync();
-                
+
                 _logger.LogInformation("Database seeded successfully");
             }
             catch (Exception ex)
@@ -76,33 +76,33 @@ namespace BookingSystem.Infrastructure.Data
 
             var users = new List<User>
             {
-                new User 
-                { 
-                    Username = "admin", 
-                    Email = "admin@bs.com", 
-                    Role = (int)UserRole.Admin, 
-                    PasswordHash = "hash", 
-                    FirstName = "Admin", 
+                new User
+                {
+                    Username = "admin",
+                    Email = "admin@bs.com",
+                    Role = (int)UserRole.Admin,
+                    PasswordHash = "hash",
+                    FirstName = "Admin",
                     LastName = "User",
                     PhoneNumber = "+1234567890"
                 },
-                new User 
-                { 
-                    Username = "manager", 
-                    Email = "manager@bs.com", 
-                    Role = (int)UserRole.Manager, 
-                    PasswordHash = "hash", 
-                    FirstName = "Manager", 
+                new User
+                {
+                    Username = "manager",
+                    Email = "manager@bs.com",
+                    Role = (int)UserRole.Manager,
+                    PasswordHash = "hash",
+                    FirstName = "Manager",
                     LastName = "User",
                     PhoneNumber = "+1234567891"
                 },
-                new User 
-                { 
-                    Username = "guest", 
-                    Email = "guest@bs.com", 
-                    Role = (int)UserRole.Guest, 
-                    PasswordHash = "hash", 
-                    FirstName = "Guest", 
+                new User
+                {
+                    Username = "guest",
+                    Email = "guest@bs.com",
+                    Role = (int)UserRole.Guest,
+                    PasswordHash = "hash",
+                    FirstName = "Guest",
                     LastName = "User",
                     PhoneNumber = "+1234567892"
                 }
@@ -131,9 +131,9 @@ namespace BookingSystem.Infrastructure.Data
         {
             if (await _context.Amenities.AnyAsync()) return;
 
-            var amenities = _amenityNames.Select(name => new Amenity 
-            { 
-                Name = name, 
+            var amenities = _amenityNames.Select(name => new Amenity
+            {
+                Name = name,
                 Description = $"Enjoy our {name.ToLower()}",
                 CreatedAt = _baseDate
             }).ToList();
@@ -148,7 +148,7 @@ namespace BookingSystem.Infrastructure.Data
 
             var amenities = await _context.Amenities.ToListAsync();
             var hotels = new List<Hotel>();
-            
+
             for (int i = 0; i < _hotelNames.Length; i++)
             {
                 var hotel = new Hotel
@@ -156,13 +156,13 @@ namespace BookingSystem.Infrastructure.Data
                     Name = _hotelNames[i],
                     Description = $"Experience luxury at {_hotelNames[i]}. Located in the heart of {_locations[i % _locations.Length]}.",
                     Location = _locations[i % _locations.Length],
-                    Rating = (decimal)(3.5 + _random.NextDouble() * 1.5), 
+                    Rating = (decimal)(3.5 + _random.NextDouble() * 1.5),
                     BasePrice = 100 + _random.Next(200),
                     CreatedAt = _baseDate
                 };
-                
+
                 var randomAmenities = amenities.OrderBy(x => _random.Next()).Take(_random.Next(5, 12)).ToList();
-                foreach(var am in randomAmenities)
+                foreach (var am in randomAmenities)
                 {
                     hotel.Amenities.Add(am);
                 }
@@ -174,13 +174,13 @@ namespace BookingSystem.Infrastructure.Data
             await _context.SaveChangesAsync();
             _logger.LogInformation("Seeded Hotels");
         }
-        
+
         private async Task SeedHotelPhotosAsync()
         {
             if (await _context.HotelPhotos.AnyAsync()) return;
             var hotels = await _context.Hotels.ToListAsync();
             var photos = new List<HotelPhoto>();
-            
+
             foreach (var hotel in hotels)
             {
                 for (int i = 0; i < 3; i++)
@@ -206,7 +206,7 @@ namespace BookingSystem.Infrastructure.Data
 
             var hotels = await _context.Hotels.ToListAsync();
             var roomTypes = new List<RoomType>();
-            
+
             foreach (var hotel in hotels)
             {
                 int typesToAdd = _random.Next(2, 5);
@@ -226,11 +226,11 @@ namespace BookingSystem.Infrastructure.Data
                         Count = _random.Next(3, 10),
                         HotelId = hotel.Id,
                         CreatedAt = _baseDate,
-                        BedCount = beds 
+                        BedCount = beds
                     });
                 }
             }
-            
+
             await _context.RoomTypes.AddRangeAsync(roomTypes);
             await _context.SaveChangesAsync();
             _logger.LogInformation("Seeded RoomTypes");
@@ -242,7 +242,7 @@ namespace BookingSystem.Infrastructure.Data
 
             var roomTypes = await _context.RoomTypes.ToListAsync();
             var pricings = new List<RoomPricing>();
-            
+
             foreach (var rt in roomTypes)
             {
                 for (int i = 0; i < 30; i++)
@@ -270,16 +270,16 @@ namespace BookingSystem.Infrastructure.Data
 
             var users = await _context.Users.Where(u => u.Role == (int)UserRole.Guest).ToListAsync();
             var roomTypes = await _context.RoomTypes.Include(rt => rt.Hotel).ToListAsync();
-            
+
             if (!users.Any() || !roomTypes.Any()) return;
 
             var bookings = new List<Booking>();
-            
+
             for (int i = 0; i < 15; i++)
             {
                 var rt = roomTypes[_random.Next(roomTypes.Count)];
                 var user = users[_random.Next(users.Count)];
-                
+
                 var checkIn = _baseDate.AddDays(_random.Next(1, 20));
                 var nights = _random.Next(1, 5);
                 var checkOut = checkIn.AddDays(nights);
@@ -298,7 +298,7 @@ namespace BookingSystem.Infrastructure.Data
                     TrackingId = Guid.NewGuid()
                 });
             }
-            
+
             await _context.Bookings.AddRangeAsync(bookings);
             await _context.SaveChangesAsync();
             _logger.LogInformation("Seeded Bookings");

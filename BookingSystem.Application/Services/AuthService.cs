@@ -41,13 +41,13 @@ public class AuthService : IAuthService
         var isPasswordValid = await _userService.VerifyUserPasswordAsync(loginDto.Email, loginDto.Password);
         if (!isPasswordValid)
             throw new Exception("Invalid credentials");
-        
+
         var userDto = await _userService.GetUserByEmailAsync(loginDto.Email);
         if (userDto == null)
             throw new Exception("Invalid credentials");
-        
+
         var userForToken = userDto.ToEntity();
-        
+
         return new AuthResponse
         {
             Id = userDto.Id,
@@ -56,7 +56,7 @@ public class AuthService : IAuthService
             Token = _jwtService.GenerateToken(userForToken)
         };
     }
-    
+
     public async Task<UserDto> GetUserById(int userId)
     {
         return await _userService.GetUserByIdAsync(userId);

@@ -21,8 +21,8 @@ namespace BookingSystem.Tests.Services
             _mockHotelRepo = new Mock<IHotelRepository>();
             _mockBookingRepo = new Mock<IRepository<Booking>>();
             _service = new RoomTypeService(
-                _mockRoomTypeRepo.Object, 
-                _mockHotelRepo.Object, 
+                _mockRoomTypeRepo.Object,
+                _mockHotelRepo.Object,
                 _mockBookingRepo.Object
             );
         }
@@ -47,13 +47,13 @@ namespace BookingSystem.Tests.Services
             Assert.Equal("Deluxe", result.Name);
             _mockRoomTypeRepo.Verify(r => r.AddAsync(It.IsAny<RoomType>()), Times.Once);
         }
-        
+
         [Fact]
         public async Task CreateRoomTypeAsync_ShouldThrowKeyNotFoundException()
         {
             // Arrange
             var dto = new CreateRoomTypeDto { HotelId = 1 };
-            
+
             _mockHotelRepo.Setup(r => r.GetByIdAsync(1))
                 .ReturnsAsync((Hotel)null);
 
@@ -65,16 +65,16 @@ namespace BookingSystem.Tests.Services
         #endregion
 
         #region UpdateRoomTypeAsync Tests
-        
+
         [Fact]
         public async Task UpdateRoomTypeAsync_ShouldThrowKeyNotFoundException()
         {
             // Arrange
             var dto = new UpdateRoomTypeDto { Id = 1, HotelId = 1 };
-            
+
             _mockHotelRepo.Setup(r => r.GetByIdAsync(1))
                 .ReturnsAsync(new Hotel { Id = 1 });
-                
+
             _mockRoomTypeRepo.Setup(r => r.GetByIdAsync(1))
                 .ReturnsAsync((RoomType)null);
 
@@ -82,13 +82,13 @@ namespace BookingSystem.Tests.Services
             var ex = await Assert.ThrowsAsync<KeyNotFoundException>(() => _service.UpdateRoomTypeAsync(dto));
             Assert.Contains("RoomType with ID 1 not found", ex.Message);
         }
-        
+
         [Fact]
         public async Task UpdateRoomTypeAsync_ShouldThrowKeyNotFoundExceptionHotelNotFound()
         {
             // Arrange
             var dto = new UpdateRoomTypeDto { Id = 1, HotelId = 1 };
-            
+
             _mockHotelRepo.Setup(r => r.GetByIdAsync(1))
                 .ReturnsAsync((Hotel)null);
 
@@ -101,19 +101,19 @@ namespace BookingSystem.Tests.Services
         public async Task UpdateRoomTypeAsync_ShouldUpdate()
         {
             // Arrange
-            var dto = new UpdateRoomTypeDto 
-            { 
-                Id = 1, 
-                HotelId = 1, 
+            var dto = new UpdateRoomTypeDto
+            {
+                Id = 1,
+                HotelId = 1,
                 Name = "Updated Name",
                 Capacity = 4
             };
-            
+
             var existingRoomType = new RoomType { Id = 1, Name = "Old Name", Capacity = 2, HotelId = 1 };
 
             _mockHotelRepo.Setup(r => r.GetByIdAsync(1))
                 .ReturnsAsync(new Hotel { Id = 1 });
-                
+
             _mockRoomTypeRepo.Setup(r => r.GetByIdAsync(1))
                 .ReturnsAsync(existingRoomType);
 
@@ -123,7 +123,7 @@ namespace BookingSystem.Tests.Services
             // Assert
             Assert.Equal("Updated Name", result.Name);
             Assert.Equal(4, result.Capacity);
-            
+
             _mockRoomTypeRepo.Verify(r => r.UpdateAsync(existingRoomType), Times.Once);
         }
 
@@ -148,17 +148,17 @@ namespace BookingSystem.Tests.Services
         {
             // Arrange
             var roomType = new RoomType { Id = 1 };
-            
+
             _mockRoomTypeRepo.Setup(r => r.GetByIdAsync(1))
                 .ReturnsAsync(roomType);
-            
+
             _mockBookingRepo.Setup(r => r.CountAsync(It.IsAny<Expression<Func<Booking, bool>>>()))
                 .ReturnsAsync(5);
 
             // Act & Assert
             var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => _service.DeleteRoomTypeAsync(1));
             Assert.Contains("Cannot delete room type that has active bookings", ex.Message);
-            
+
             _mockRoomTypeRepo.Verify(r => r.DeleteAsync(It.IsAny<int>()), Times.Never);
         }
 
@@ -167,10 +167,10 @@ namespace BookingSystem.Tests.Services
         {
             // Arrange
             var roomType = new RoomType { Id = 1 };
-            
+
             _mockRoomTypeRepo.Setup(r => r.GetByIdAsync(1))
                 .ReturnsAsync(roomType);
-            
+
             _mockBookingRepo.Setup(r => r.CountAsync(It.IsAny<Expression<Func<Booking, bool>>>()))
                 .ReturnsAsync(0);
 
@@ -219,12 +219,12 @@ namespace BookingSystem.Tests.Services
         public async Task GetAllRoomTypesAsync_ShouldReturnList()
         {
             // Arrange
-            var list = new List<RoomType> 
-            { 
-                new RoomType { Id = 1 }, 
-                new RoomType { Id = 2 } 
+            var list = new List<RoomType>
+            {
+                new RoomType { Id = 1 },
+                new RoomType { Id = 2 }
             };
-            
+
             _mockRoomTypeRepo.Setup(r => r.GetAllAsync())
                 .ReturnsAsync(list);
 
@@ -264,7 +264,7 @@ namespace BookingSystem.Tests.Services
 
             _mockHotelRepo.Setup(r => r.GetByIdAsync(1))
                 .ReturnsAsync(hotel);
-            
+
             _mockRoomTypeRepo.Setup(r => r.GetAllAsync(
                 It.IsAny<Expression<Func<RoomType, bool>>>()))
                 .ReturnsAsync(roomTypes);

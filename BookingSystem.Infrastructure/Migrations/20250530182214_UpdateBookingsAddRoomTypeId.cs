@@ -7,7 +7,7 @@ namespace BookingSystem.Migrations
     /// <inheritdoc />
     public partial class UpdateBookingsAddRoomTypeId : Migration
     {
-       /// <inheritdoc />
+        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             // Step 1: Add room_type_id column if it doesn't exist
@@ -30,26 +30,26 @@ namespace BookingSystem.Migrations
                 FROM rooms r
                 WHERE b.room_id = r.id AND b.room_type_id IS NULL;
             ");
-            
+
             // Step 3: For any remaining NULL room_type_id, set to a default value
             migrationBuilder.Sql(@"
                 UPDATE bookings 
                 SET room_type_id = (SELECT id FROM room_types ORDER BY id LIMIT 1)
                 WHERE room_type_id IS NULL;
             ");
-            
+
             // Step 4: Replace values > 35 with random values 1-35
             migrationBuilder.Sql(@"
                 UPDATE bookings
                 SET room_type_id = 1 + floor(random() * 35)::integer
                 WHERE room_type_id > 35;
             ");
-            
+
             // Step 5: Make room_type_id NOT NULL
             migrationBuilder.Sql(@"
                 ALTER TABLE bookings ALTER COLUMN room_type_id SET NOT NULL;
             ");
-            
+
             // Step 6: Create index for room_type_id
             migrationBuilder.Sql(@"
                 DO $$
@@ -62,7 +62,7 @@ namespace BookingSystem.Migrations
                     END IF;
                 END $$;
             ");
-            
+
             // Step 7: Add foreign key constraint for room_type_id
             migrationBuilder.Sql(@"
                 DO $$
@@ -78,7 +78,7 @@ namespace BookingSystem.Migrations
                     END IF;
                 END $$;
             ");
-            
+
             // Step 8: Drop the foreign key constraint for room_id if it exists
             migrationBuilder.Sql(@"
                 DO $$
@@ -90,7 +90,7 @@ namespace BookingSystem.Migrations
                     END IF;
                 END $$;
             ");
-            
+
             // Step 9: Drop the index for room_id if it exists
             migrationBuilder.Sql(@"
                 DO $$
@@ -103,7 +103,7 @@ namespace BookingSystem.Migrations
                     END IF;
                 END $$;
             ");
-            
+
             // Step 10: Drop the room_id column
             migrationBuilder.Sql(@"
                 DO $$
@@ -116,7 +116,7 @@ namespace BookingSystem.Migrations
                     END IF;
                 END $$;
             ");
-            
+
             // Step 11: Do the same for room_pricings table if needed
             migrationBuilder.Sql(@"
                 -- Add room_type_id to room_pricings if needed
@@ -166,7 +166,7 @@ namespace BookingSystem.Migrations
                     END IF;
                 END $$;
             ");
-            
+
             // Step 2: Create index for room_id
             migrationBuilder.Sql(@"
                 DO $$
@@ -179,7 +179,7 @@ namespace BookingSystem.Migrations
                     END IF;
                 END $$;
             ");
-            
+
             // Step 3: Drop the foreign key constraint for room_type_id
             migrationBuilder.Sql(@"
                 DO $$
@@ -191,7 +191,7 @@ namespace BookingSystem.Migrations
                     END IF;
                 END $$;
             ");
-            
+
             // Step 4: Drop the index for room_type_id
             migrationBuilder.Sql(@"
                 DO $$
@@ -204,7 +204,7 @@ namespace BookingSystem.Migrations
                     END IF;
                 END $$;
             ");
-            
+
             // Step 5: Drop the room_type_id column
             migrationBuilder.Sql(@"
                 DO $$

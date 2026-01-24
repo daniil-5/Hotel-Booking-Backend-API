@@ -13,7 +13,7 @@ public class RedisCacheService : ICacheService
     private readonly ILogger<RedisCacheService> _logger;
 
     public RedisCacheService(
-        IDistributedCache distributedCache, 
+        IDistributedCache distributedCache,
         IConnectionMultiplexer connectionMultiplexer,
         ILogger<RedisCacheService> logger)
     {
@@ -27,7 +27,7 @@ public class RedisCacheService : ICacheService
         try
         {
             var cachedValue = await _distributedCache.GetStringAsync(key);
-            if (cachedValue == null) 
+            if (cachedValue == null)
                 return null;
 
             return JsonSerializer.Deserialize<T>(cachedValue);
@@ -74,7 +74,7 @@ public class RedisCacheService : ICacheService
             var server = _connectionMultiplexer.GetServer(_connectionMultiplexer.GetEndPoints().First());
 
             var keys = server.Keys(pattern: pattern);
-         
+
             var database = _connectionMultiplexer.GetDatabase();
 
             var keyArray = keys.ToArray();
@@ -89,12 +89,12 @@ public class RedisCacheService : ICacheService
             _logger.LogError(ex, "Error removing cache keys by pattern {Pattern}", pattern);
         }
     }
-    
+
     public async Task RemoveByPrefixAsync(string prefix)
     {
         await RemoveByPatternAsync($"{prefix}*");
     }
-    
+
     public async Task<bool> ExistsAsync(string key)
     {
         try

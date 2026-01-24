@@ -13,6 +13,6 @@ public interface IUserService
     Task<IEnumerable<UserDto>> GetAllUsersAsync();
     Task<UserSearchResultDto> SearchUsersAsync(UserSearchDto searchDto);
     Task<bool> ChangePasswordAsync(ChangePasswordDto changePasswordDto);
-    
+
     Task<bool> VerifyUserPasswordAsync(string email, string password);
 }

@@ -179,7 +179,7 @@ builder.Services.AddScoped<IUserService>(provider =>
 );
 
 builder.Services.AddScoped<IRoomTypeService, RoomTypeService>();
-builder.Services.AddScoped<IAmenityService, AmenityService>(); 
+builder.Services.AddScoped<IAmenityService, AmenityService>();
 builder.Services.AddScoped<IRoomPricingService, RoomPricingService>();
 builder.Services.AddScoped<DatabaseSeeder>();
 builder.Services.AddScoped<ISerializationService, SerializationService>();
@@ -208,8 +208,8 @@ builder.Services.AddCors(options =>
             .WithOrigins(
                 "http://localhost:5044",
                 "http://localhost:3000" // frontend
-                // "https://localhost:7050",
-                // "http://localhost:5173"
+                                        // "https://localhost:7050",
+                                        // "http://localhost:5173"
             )
             .AllowAnyMethod()
             .AllowAnyHeader()
@@ -233,7 +233,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateLifetime = true,
             ClockSkew = TimeSpan.Zero
         };
-        
+
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
@@ -272,7 +272,7 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-    
+
     using (var scope = app.Services.CreateScope())
     {
         var services = scope.ServiceProvider;
@@ -295,7 +295,7 @@ if (app.Environment.IsDevelopment())
 
 #region Middleware
 
-app.UseSerilogRequestLogging(); 
+app.UseSerilogRequestLogging();
 app.UseHttpsRedirection();
 app.UseCors("AllowSpecificOrigin");
 app.UseAuthentication();

@@ -23,7 +23,7 @@ namespace BookingSystem.Application.Services
             if (existingEmail != null)
                 throw new ApplicationException("Email is already in use");
 
-            var existingUsername = await _userRepository.FindAsync(u => u.Username == userDto.Username); 
+            var existingUsername = await _userRepository.FindAsync(u => u.Username == userDto.Username);
             if (existingUsername != null)
                 throw new ApplicationException("Username is already in use");
 
@@ -38,7 +38,7 @@ namespace BookingSystem.Application.Services
             var existingUser = await _userRepository.GetByIdAsync(userDto.Id);
             if (existingUser == null)
                 throw new ApplicationException($"User with ID {userDto.Id} not found");
-            
+
             if (userDto.Email != existingUser.Email)
             {
                 var existingEmail = await _userRepository.GetByEmailAsync(userDto.Email);
@@ -101,22 +101,22 @@ namespace BookingSystem.Application.Services
         public async Task<UserSearchResultDto> SearchUsersAsync(UserSearchDto searchDto)
         {
             Expression<Func<User, bool>> filter = user => true;
-            
+
             if (!string.IsNullOrEmpty(searchDto.SearchTerm))
             {
                 var term = searchDto.SearchTerm.ToLower();
-                filter = filter.And(u => 
-                    u.Username.ToLower().Contains(term) || 
-                    u.Email.ToLower().Contains(term) || 
-                    u.FirstName.ToLower().Contains(term) || 
+                filter = filter.And(u =>
+                    u.Username.ToLower().Contains(term) ||
+                    u.Email.ToLower().Contains(term) ||
+                    u.FirstName.ToLower().Contains(term) ||
                     u.LastName.ToLower().Contains(term));
             }
-            
+
             if (searchDto.Role.HasValue)
             {
                 filter = filter.And(u => u.Role == (int)searchDto.Role.Value);
             }
-            
+
             Func<IQueryable<User>, IOrderedQueryable<User>> orderBy = null;
             switch (searchDto.SortBy.ToLower())
             {
@@ -158,14 +158,14 @@ namespace BookingSystem.Application.Services
                 searchDto.PageNumber,
                 searchDto.PageSize
             );
-            
+
             var totalPages = (int)Math.Ceiling(totalCount / (double)searchDto.PageSize);
             var hasPrevious = searchDto.PageNumber > 1;
             var hasNext = searchDto.PageNumber < totalPages;
 
 
             var userDtos = users.Select(u => u.ToDto()).ToList();
-            
+
             return new UserSearchResultDto
             {
                 Users = userDtos,
@@ -183,27 +183,27 @@ namespace BookingSystem.Application.Services
             var user = await _userRepository.GetByIdAsync(changePasswordDto.UserId);
             if (user == null)
                 throw new ApplicationException($"User with ID {changePasswordDto.UserId} not found");
-            
+
             if (!BCrypt.Net.BCrypt.Verify(changePasswordDto.CurrentPassword, user.PasswordHash))
-                return false; 
-            
+                return false;
+
             if (changePasswordDto.NewPassword != changePasswordDto.ConfirmPassword)
                 throw new ApplicationException("New password and confirmation do not match");
-            
+
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(changePasswordDto.NewPassword);
             user.UpdatedAt = DateTime.UtcNow;
 
             await _userRepository.UpdateAsync(user);
             return true;
         }
-        
+
         public async Task<bool> VerifyUserPasswordAsync(string email, string password)
         {
             var user = await _userRepository.GetByEmailAsync(email);
             if (user == null) return false;
-    
+
             return BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);
         }
-        
+
     }
 }

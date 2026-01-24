@@ -34,9 +34,9 @@ public class HotelPhotoService : IHotelPhotoService
 
         if (hotelId <= 0)
             throw new ArgumentException("Hotel ID must be a positive number", nameof(hotelId));
-        
+
         var uploadResult = await _cloudinaryRepository.UploadPhotoAsync(file, hotelId, description);
-        
+
         var hotelPhoto = new HotelPhoto
         {
             HotelId = hotelId,
@@ -57,11 +57,11 @@ public class HotelPhotoService : IHotelPhotoService
 
         if (hotelId <= 0)
             throw new ArgumentException("Hotel ID must be a positive number", nameof(hotelId));
-        
+
         var uploadResults = await _cloudinaryRepository.UploadPhotosAsync(files, hotelId);
-        
+
         var hotelPhotos = new List<HotelPhoto>();
-        
+
         foreach (var result in uploadResults)
         {
             var hotelPhoto = new HotelPhoto
@@ -101,7 +101,7 @@ public class HotelPhotoService : IHotelPhotoService
         var photo = await _hotelPhotoRepository.GetByIdAsync(id);
         if (photo == null)
             throw new KeyNotFoundException($"Photo with ID {id} not found");
-        
+
         if (!string.IsNullOrEmpty(photo.PublicId))
         {
             var deleteResult = await _cloudinaryRepository.DeletePhotoAsync(photo.PublicId);
@@ -110,7 +110,7 @@ public class HotelPhotoService : IHotelPhotoService
                 throw new Exception($"Failed to delete photo with public ID {photo.PublicId} from Cloudinary");
             }
         }
-        
+
         await _hotelPhotoRepository.DeleteAsync(id);
     }
 
@@ -136,11 +136,11 @@ public class HotelPhotoService : IHotelPhotoService
     {
         var photos = await _hotelPhotoRepository.GetAllAsync();
         var hotelPhotos = photos.Where(p => p.HotelId == hotelId).ToList();
-        
+
         var mainPhoto = hotelPhotos.FirstOrDefault(p => p.Id == photoId);
         if (mainPhoto == null)
             throw new KeyNotFoundException($"Photo with ID {photoId} not found for hotel {hotelId}");
-        
+
         foreach (var photo in hotelPhotos)
         {
             if (photo.IsMain)
@@ -149,10 +149,10 @@ public class HotelPhotoService : IHotelPhotoService
                 await _hotelPhotoRepository.UpdateAsync(photo);
             }
         }
-        
+
         mainPhoto.IsMain = true;
         await _hotelPhotoRepository.UpdateAsync(mainPhoto);
-        
+
         return mainPhoto.ToDto();
     }
 
@@ -168,18 +168,18 @@ public class HotelPhotoService : IHotelPhotoService
     public async Task SyncCloudinaryPhotosAsync(int hotelId)
     {
         var cloudinaryPhotos = await _cloudinaryRepository.GetHotelPhotosFromCloudinaryAsync(hotelId);
-        
+
         var dbPhotos = (await _hotelPhotoRepository.GetAllAsync()).Where(p => p.HotelId == hotelId).ToList();
-        
+
         var cloudinaryPublicIds = cloudinaryPhotos.Select(p => p.PublicId).ToHashSet();
         var dbPublicIds = dbPhotos.Where(p => !string.IsNullOrEmpty(p.PublicId))
                                    .Select(p => p.PublicId)
                                    .ToHashSet();
-        
-        var photosToUpload = dbPhotos.Where(p => string.IsNullOrEmpty(p.PublicId) || 
+
+        var photosToUpload = dbPhotos.Where(p => string.IsNullOrEmpty(p.PublicId) ||
                                              !cloudinaryPublicIds.Contains(p.PublicId))
                                      .ToList();
-        
+
         foreach (var photoToUpload in photosToUpload)
         {
             try
@@ -189,7 +189,7 @@ public class HotelPhotoService : IHotelPhotoService
                     using (var httpClient = new HttpClient())
                     {
                         var imageBytes = await httpClient.GetByteArrayAsync(photoToUpload.Url);
-                        
+
                         using (var stream = new MemoryStream(imageBytes))
                         {
                             var fileName = $"hotel_{hotelId}_photo_{photoToUpload.Id}.jpg";
@@ -200,16 +200,16 @@ public class HotelPhotoService : IHotelPhotoService
                                 name: "file",
                                 fileName: fileName
                             );
-                            
+
                             var uploadResult = await _cloudinaryRepository.UploadPhotoAsync(
-                                formFile, 
-                                hotelId, 
+                                formFile,
+                                hotelId,
                                 photoToUpload.Description
                             );
-                            
+
                             photoToUpload.PublicId = uploadResult.PublicId;
                             photoToUpload.Url = uploadResult.Url;
-                            
+
                             await _hotelPhotoRepository.UpdateAsync(photoToUpload);
                         }
                     }
@@ -219,10 +219,10 @@ public class HotelPhotoService : IHotelPhotoService
             {
             }
         }
-        
+
         cloudinaryPhotos = await _cloudinaryRepository.GetHotelPhotosFromCloudinaryAsync(hotelId);
         cloudinaryPublicIds = cloudinaryPhotos.Select(p => p.PublicId).ToHashSet();
-        
+
         foreach (var cloudinaryPhoto in cloudinaryPhotos)
         {
             if (!dbPublicIds.Contains(cloudinaryPhoto.PublicId))
@@ -237,8 +237,8 @@ public class HotelPhotoService : IHotelPhotoService
                         Description = null,
                         IsMain = false
                     };
-                    
-                    
+
+
                     await _hotelPhotoRepository.AddAsync(newPhoto);
                 }
                 catch (Exception)
@@ -246,11 +246,11 @@ public class HotelPhotoService : IHotelPhotoService
                 }
             }
         }
-        
-        var photosToRemove = dbPhotos.Where(p => !string.IsNullOrEmpty(p.PublicId) && 
+
+        var photosToRemove = dbPhotos.Where(p => !string.IsNullOrEmpty(p.PublicId) &&
                                             !cloudinaryPublicIds.Contains(p.PublicId))
                                     .ToList();
-        
+
         foreach (var photoToRemove in photosToRemove)
         {
             try
@@ -263,13 +263,13 @@ public class HotelPhotoService : IHotelPhotoService
             {
             }
         }
-        
-        var photosToUpdate = dbPhotos.Where(p => 
-            !string.IsNullOrEmpty(p.PublicId) && 
+
+        var photosToUpdate = dbPhotos.Where(p =>
+            !string.IsNullOrEmpty(p.PublicId) &&
             cloudinaryPublicIds.Contains(p.PublicId) &&
             cloudinaryPhotos.First(c => c.PublicId == p.PublicId).Url != p.Url
         ).ToList();
-        
+
         foreach (var photoToUpdate in photosToUpdate)
         {
             try

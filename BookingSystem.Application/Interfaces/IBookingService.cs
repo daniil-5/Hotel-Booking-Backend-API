@@ -6,7 +6,7 @@ public interface IBookingService
 {
     Task<BookingResponseDto> GetBookingByIdAsync(int id);
     Task<IEnumerable<BookingResponseDto>> GetAllBookingsAsync();
-    Task<Guid>  CreateBookingAsync(CreateBookingDto bookingDto);
+    Task<Guid> CreateBookingAsync(CreateBookingDto bookingDto);
     Task<BookingResponseDto> UpdateBookingAsync(UpdateBookingDto dto);
     Task DeleteBookingAsync(int id);
     Task<IEnumerable<BookingResponseDto>> GetBookingsByUserIdAsync(int userId);

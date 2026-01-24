@@ -10,12 +10,12 @@ public class CloudinaryPhotoRepository : IPhotoRepository
 {
     private readonly Cloudinary _cloudinary;
     private const string HotelFolderPrefix = "hotels/";
-    
+
     public CloudinaryPhotoRepository(CloudinarySettings settings)
     {
         if (settings == null)
             throw new ArgumentNullException(nameof(settings));
-            
+
         if (string.IsNullOrEmpty(settings.CloudName))
             throw new ArgumentException("Cloud name is required", nameof(settings.CloudName));
         if (string.IsNullOrEmpty(settings.ApiKey))
@@ -39,7 +39,7 @@ public class CloudinaryPhotoRepository : IPhotoRepository
 
         if (hotelId <= 0)
             throw new ArgumentException("Hotel ID must be a positive number", nameof(hotelId));
-            
+
         try
         {
             var uploadParams = new ImageUploadParams
@@ -132,9 +132,9 @@ public class CloudinaryPhotoRepository : IPhotoRepository
             {
                 transformationObj = new Transformation().RawTransformation(transformation);
             }
-            
+
             var urlBuilder = _cloudinary.Api.UrlImgUp;
-            
+
             string url;
             if (transformationObj != null)
             {
@@ -157,10 +157,10 @@ public class CloudinaryPhotoRepository : IPhotoRepository
     {
         if (hotelId <= 0)
             throw new ArgumentException("Hotel ID must be a positive number", nameof(hotelId));
-    
+
         if (maxResults <= 0)
             throw new ArgumentException("Max results must be a positive number", nameof(maxResults));
-    
+
         try
         {
             string folderPath = $"{HotelFolderPrefix}{hotelId}/";
@@ -168,12 +168,12 @@ public class CloudinaryPhotoRepository : IPhotoRepository
                 prefix: folderPath,
                 type: "upload"
             );
-        
+
             if (result.Error != null)
             {
                 throw new Exception($"Failed to retrieve images: {result.Error.Message}");
             }
-            
+
             return result.Resources
                 .Take(maxResults)
                 .Select(resource => new PhotoUploadResult
@@ -182,7 +182,7 @@ public class CloudinaryPhotoRepository : IPhotoRepository
                     Url = resource.SecureUrl.AbsoluteUri
                 })
                 .ToList();
-     
+
         }
         catch (Exception ex)
         {

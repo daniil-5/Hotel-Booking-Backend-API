@@ -15,7 +15,7 @@ namespace BookingSystem.Api.Controllers
         {
             _roomPricingService = roomPricingService;
         }
-        
+
         [HttpGet]
         [ProducesResponseType(typeof(IEnumerable<RoomPricingDto>), StatusCodes.Status200OK)]
         public async Task<ActionResult<IEnumerable<RoomPricingDto>>> GetAll()
@@ -23,7 +23,7 @@ namespace BookingSystem.Api.Controllers
             var pricings = await _roomPricingService.GetAllRoomPricingsAsync();
             return Ok(pricings);
         }
-        
+
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(RoomPricingDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -36,7 +36,7 @@ namespace BookingSystem.Api.Controllers
             }
             return Ok(pricing);
         }
-        
+
         [HttpPost]
         [Authorize(Roles = "Admin,Manager")]
         [ProducesResponseType(typeof(RoomPricingDto), StatusCodes.Status201Created)]
@@ -49,10 +49,10 @@ namespace BookingSystem.Api.Controllers
             }
 
             var createdPricing = await _roomPricingService.CreateRoomPricingAsync(pricingDto);
-            
+
             return CreatedAtAction(
-                nameof(GetById), 
-                new { id = createdPricing.Id }, 
+                nameof(GetById),
+                new { id = createdPricing.Id },
                 createdPricing
             );
         }
@@ -88,7 +88,7 @@ namespace BookingSystem.Api.Controllers
                 return StatusCode(500, $"An error occurred while updating room pricing: {ex.Message}");
             }
         }
-        
+
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin,Manager")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]

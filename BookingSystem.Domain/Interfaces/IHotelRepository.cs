@@ -13,20 +13,20 @@ namespace BookingSystem.Domain.Interfaces
             bool includeRoomTypes = false,
             bool includePhotos = false,
             bool includeAmenities = false);
-            
+
         Task<IEnumerable<Hotel>> GetHotelsWithDetailsAsync(
-            Expression<Func<Hotel, bool>> filter = null, 
-            int pageNumber = 1, 
+            Expression<Func<Hotel, bool>> filter = null,
+            int pageNumber = 1,
             int pageSize = 10);
-            
+
         Task<Hotel> GetHotelWithDetailsAsync(int id);
-        
+
         Task<IEnumerable<Hotel>> SearchHotelsByAvailabilityAsync(
-            string location, 
-            DateTime checkIn, 
-            DateTime checkOut, 
-            int guests, 
-            int pageNumber = 1, 
+            string location,
+            DateTime checkIn,
+            DateTime checkOut,
+            int guests,
+            int pageNumber = 1,
             int pageSize = 10);
     }
 }

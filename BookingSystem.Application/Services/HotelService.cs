@@ -11,8 +11,8 @@ namespace BookingSystem.Application.Services;
 public class HotelService : IHotelService
 {
     private readonly IHotelRepository _hotelRepository;
-    
-    private readonly IRepository<Amenity> _amenityRepository; 
+
+    private readonly IRepository<Amenity> _amenityRepository;
 
     public HotelService(IHotelRepository hotelRepository, IRepository<Amenity> amenityRepository)
     {
@@ -27,54 +27,54 @@ public class HotelService : IHotelService
         return hotel.ToDto();
     }
 
-   public async Task<HotelDto> UpdateHotelAsync(UpdateHotelDto hotelDto)
-{
-    var existingHotel = await _hotelRepository.GetByIdAsync(hotelDto.Id, 
-            include: q => q.Include(h => h.Amenities));
-            
-    if (existingHotel == null)
-        throw new KeyNotFoundException($"Hotel with ID {hotelDto.Id} not found");
-
-    existingHotel.Name = hotelDto.Name;
-    existingHotel.Description = hotelDto.Description;
-    existingHotel.Location = hotelDto.Location;
-    existingHotel.Rating = hotelDto.Rating;
-    existingHotel.BasePrice = hotelDto.BasePrice;
-    existingHotel.UpdatedAt = DateTime.UtcNow;
-    
-    if (hotelDto.Amenities != null)
+    public async Task<HotelDto> UpdateHotelAsync(UpdateHotelDto hotelDto)
     {
-        existingHotel.Amenities.Clear();
-        
-        var amenityNames = hotelDto.Amenities.Select(a => a.Name).Distinct().ToList();
-        
-        var existingAmenities = await _amenityRepository.GetAllAsync(a => amenityNames.Contains(a.Name));
-        
-        foreach (var amenityDto in hotelDto.Amenities)
-        {
-            if (existingHotel.Amenities.Any(a => a.Name.Equals(amenityDto.Name, StringComparison.OrdinalIgnoreCase)))
-                continue;
+        var existingHotel = await _hotelRepository.GetByIdAsync(hotelDto.Id,
+                include: q => q.Include(h => h.Amenities));
 
-            var existing = existingAmenities.FirstOrDefault(a => a.Name.Equals(amenityDto.Name, StringComparison.OrdinalIgnoreCase));
-            
-            if (existing != null)
+        if (existingHotel == null)
+            throw new KeyNotFoundException($"Hotel with ID {hotelDto.Id} not found");
+
+        existingHotel.Name = hotelDto.Name;
+        existingHotel.Description = hotelDto.Description;
+        existingHotel.Location = hotelDto.Location;
+        existingHotel.Rating = hotelDto.Rating;
+        existingHotel.BasePrice = hotelDto.BasePrice;
+        existingHotel.UpdatedAt = DateTime.UtcNow;
+
+        if (hotelDto.Amenities != null)
+        {
+            existingHotel.Amenities.Clear();
+
+            var amenityNames = hotelDto.Amenities.Select(a => a.Name).Distinct().ToList();
+
+            var existingAmenities = await _amenityRepository.GetAllAsync(a => amenityNames.Contains(a.Name));
+
+            foreach (var amenityDto in hotelDto.Amenities)
             {
-                existingHotel.Amenities.Add(existing);
-            }
-            else
-            {
-                existingHotel.Amenities.Add(new Amenity 
-                { 
-                    Name = amenityDto.Name, 
-                    Description = amenityDto.Description 
-                });
+                if (existingHotel.Amenities.Any(a => a.Name.Equals(amenityDto.Name, StringComparison.OrdinalIgnoreCase)))
+                    continue;
+
+                var existing = existingAmenities.FirstOrDefault(a => a.Name.Equals(amenityDto.Name, StringComparison.OrdinalIgnoreCase));
+
+                if (existing != null)
+                {
+                    existingHotel.Amenities.Add(existing);
+                }
+                else
+                {
+                    existingHotel.Amenities.Add(new Amenity
+                    {
+                        Name = amenityDto.Name,
+                        Description = amenityDto.Description
+                    });
+                }
             }
         }
-    }
 
-    await _hotelRepository.UpdateAsync(existingHotel);
-    return existingHotel.ToDto();
-}
+        await _hotelRepository.UpdateAsync(existingHotel);
+        return existingHotel.ToDto();
+    }
     public async Task DeleteHotelAsync(int id)
     {
         var hotel = await _hotelRepository.GetByIdAsync(id);
@@ -131,7 +131,7 @@ public class HotelService : IHotelService
 
         if (searchDto.RoomTypeId.HasValue)
             filter = filter.And(h => h.RoomTypes.Any(rt => rt.Id == searchDto.RoomTypeId.Value && !rt.IsDeleted));
-        
+
         if (searchDto.Amenities != null && searchDto.Amenities.Any())
         {
             foreach (var amenityName in searchDto.Amenities)
@@ -183,5 +183,5 @@ public class HotelService : IHotelService
             HasNext = hasNext
         };
     }
-    
+
 }

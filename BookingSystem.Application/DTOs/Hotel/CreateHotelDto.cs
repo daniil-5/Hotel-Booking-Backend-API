@@ -20,14 +20,14 @@ public class CreateHotelDto
 
     [Range(0, 5.0)]
     public decimal Rating { get; set; }
-    
+
     [Range(0, double.MaxValue)]
     public decimal BasePrice { get; set; }
-    
+
     [Required]
     public ICollection<AmenityDto> Amenities { get; set; } = new List<AmenityDto>();
-    
+
     public ICollection<Domain.Entities.RoomType> RoomTypes { get; set; } = new List<Domain.Entities.RoomType>();
-    
+
     public ICollection<HotelPhotoDto> Photos { get; set; } = new List<HotelPhotoDto>();
 }

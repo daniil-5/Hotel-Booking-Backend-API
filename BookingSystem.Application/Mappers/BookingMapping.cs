@@ -20,7 +20,7 @@ namespace BookingSystem.Application.Mappers
                 GuestCount = booking.GuestCount,
                 TotalPrice = booking.TotalPrice,
                 Status = booking.Status,
-                TrackingId =  booking.TrackingId
+                TrackingId = booking.TrackingId
             };
         }
         public static Domain.Entities.Booking ToEntity(this CreateBookingDto dto)

@@ -17,7 +17,7 @@ namespace BookingSystem.API.Controllers
             _hotelService = hotelService;
             _logger = logger;
         }
-        
+
         [HttpGet]
         [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<HotelDto>>> GetHotels()
@@ -34,7 +34,7 @@ namespace BookingSystem.API.Controllers
                 return StatusCode(500, "An error occurred while retrieving hotels");
             }
         }
-        
+
         [HttpGet("{id}")]
         [AllowAnonymous]
         public async Task<ActionResult<HotelDto>> GetHotel(int id)
@@ -43,13 +43,13 @@ namespace BookingSystem.API.Controllers
             {
                 _logger.LogInformation("Getting hotel with ID: {HotelId}", id);
                 var hotel = await _hotelService.GetHotelByIdAsync(id);
-                
+
                 if (hotel == null)
                 {
                     _logger.LogWarning("Hotel with ID: {HotelId} not found", id);
                     return NotFound($"Hotel with ID {id} not found");
                 }
-                
+
                 return Ok(hotel);
             }
             catch (Exception ex)
@@ -58,7 +58,7 @@ namespace BookingSystem.API.Controllers
                 return StatusCode(500, "An error occurred while retrieving the hotel");
             }
         }
-        
+
         [HttpPost]
         [Authorize(Roles = "Manager,Admin")]
         public async Task<ActionResult<HotelDto>> CreateHotel(CreateHotelDto hotelDto)
@@ -75,7 +75,7 @@ namespace BookingSystem.API.Controllers
                 return StatusCode(500, "An error occurred while creating the hotel");
             }
         }
-        
+
         [HttpPut("{id}")]
         [Authorize(Roles = "Manager,Admin")]
         public async Task<IActionResult> UpdateHotel(int id, UpdateHotelDto hotelDto)
@@ -102,7 +102,7 @@ namespace BookingSystem.API.Controllers
                 return StatusCode(500, "An error occurred while updating the hotel");
             }
         }
-        
+
         [HttpDelete("{id}")]
         [Authorize(Roles = "Manager,Admin")]
         public async Task<IActionResult> DeleteHotel(int id)
@@ -124,7 +124,7 @@ namespace BookingSystem.API.Controllers
                 return StatusCode(500, "An error occurred while deleting the hotel");
             }
         }
-        
+
         [HttpGet("search")]
         [AllowAnonymous]
         public async Task<ActionResult<HotelSearchResultDto>> SearchHotels([FromQuery] HotelSearchDto searchDto)

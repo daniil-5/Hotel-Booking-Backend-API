@@ -36,9 +36,9 @@ namespace BookingSystem.Tests.Services
             _mockKafkaProducer = new Mock<IKafkaProducer>();
             _mockLogger = new Mock<ILogger<BookingService>>();
 
-            var kafkaSettings = Options.Create(new KafkaSettings 
-            { 
-                Topics = new KafkaTopics { BookingRequests = "bookings-topic" } 
+            var kafkaSettings = Options.Create(new KafkaSettings
+            {
+                Topics = new KafkaTopics { BookingRequests = "bookings-topic" }
             });
 
             _service = new BookingService(
@@ -59,10 +59,10 @@ namespace BookingSystem.Tests.Services
         public async Task CreateBookingAsync_ShouldThrow_DatesInvalid()
         {
             // Arrange
-            var dto = new CreateBookingDto 
-            { 
-                CheckInDate = DateTime.Now.AddDays(2), 
-                CheckOutDate = DateTime.Now.AddDays(1) 
+            var dto = new CreateBookingDto
+            {
+                CheckInDate = DateTime.Now.AddDays(2),
+                CheckOutDate = DateTime.Now.AddDays(1)
             };
 
             // Act & Assert
@@ -105,9 +105,9 @@ namespace BookingSystem.Tests.Services
         {
             // Arrange
             var booking = new Booking { Id = 1, TrackingId = Guid.NewGuid() };
-            
+
             _mockBookingRepo.Setup(r => r.GetByIdAsync(
-                1, 
+                1,
                 It.IsAny<Func<IQueryable<Booking>, IQueryable<Booking>>>()
             )).ReturnsAsync(booking);
 
@@ -124,7 +124,7 @@ namespace BookingSystem.Tests.Services
         {
             // Arrange
             _mockBookingRepo.Setup(r => r.GetByIdAsync(
-                1, 
+                1,
                 It.IsAny<Func<IQueryable<Booking>, IQueryable<Booking>>>()
             )).ReturnsAsync((Booking)null);
 
@@ -145,7 +145,7 @@ namespace BookingSystem.Tests.Services
             // Arrange
             var guid = Guid.NewGuid();
             var booking = new Booking { Id = 1, TrackingId = guid };
-            
+
             _mockBookingRepo.Setup(r => r.FindAsync(It.IsAny<Expression<Func<Booking, bool>>>()))
                 .ReturnsAsync(booking);
 
@@ -168,7 +168,7 @@ namespace BookingSystem.Tests.Services
             _mockBookingRepo.Setup(r => r.GetByIdAsync(1)).ReturnsAsync((Booking)null);
 
             // Act & Assert
-            await Assert.ThrowsAsync<KeyNotFoundException>(() => 
+            await Assert.ThrowsAsync<KeyNotFoundException>(() =>
                 _service.UpdateBookingAsync(new UpdateBookingDto { Id = 1 }));
         }
 
@@ -179,10 +179,10 @@ namespace BookingSystem.Tests.Services
             var booking = new Booking { Id = 1, CheckInDate = DateTime.Now, CheckOutDate = DateTime.Now.AddDays(1) };
             _mockBookingRepo.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(booking);
 
-            var dto = new UpdateBookingDto 
-            { 
-                Id = 1, 
-                CheckInDate = DateTime.Now.AddDays(2), 
+            var dto = new UpdateBookingDto
+            {
+                Id = 1,
+                CheckInDate = DateTime.Now.AddDays(2),
                 CheckOutDate = DateTime.Now.AddDays(1)
             };
 
@@ -201,12 +201,12 @@ namespace BookingSystem.Tests.Services
             var roomType = new RoomType { Id = 10, Capacity = 2 };
             _mockRoomTypeRepo.Setup(r => r.GetByIdAsync(10)).ReturnsAsync(roomType);
 
-            var dto = new UpdateBookingDto 
-            { 
-                Id = 1, 
-                CheckInDate = booking.CheckInDate, 
+            var dto = new UpdateBookingDto
+            {
+                Id = 1,
+                CheckInDate = booking.CheckInDate,
                 CheckOutDate = booking.CheckOutDate,
-                GuestCount = 5 
+                GuestCount = 5
             };
 
             // Act & Assert
@@ -220,10 +220,10 @@ namespace BookingSystem.Tests.Services
             // Arrange
             var booking = new Booking { Id = 1, RoomTypeId = 10, HotelId = 1 };
             _mockBookingRepo.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(booking);
-            
+
             var roomType = new RoomType { Id = 10, HotelId = 1, Count = 1 };
             _mockRoomTypeRepo.Setup(r => r.GetByIdAsync(10)).ReturnsAsync(roomType);
-            
+
             var overlappingBookings = new List<Booking>
             {
                 new Booking { Id = 2, RoomTypeId = 10, CheckInDate = DateTime.Today, CheckOutDate = DateTime.Today.AddDays(5) }
@@ -232,11 +232,11 @@ namespace BookingSystem.Tests.Services
             var mockSet = MockAsyncQueryable(overlappingBookings);
             _mockBookingRepo.Setup(r => r.GetQueryable()).Returns(mockSet.Object);
 
-            var dto = new UpdateBookingDto 
-            { 
-                Id = 1, 
+            var dto = new UpdateBookingDto
+            {
+                Id = 1,
                 CheckInDate = DateTime.Today.AddDays(1),
-                CheckOutDate = DateTime.Today.AddDays(3) 
+                CheckOutDate = DateTime.Today.AddDays(3)
             };
 
             // Act & Assert
@@ -248,27 +248,30 @@ namespace BookingSystem.Tests.Services
         public async Task UpdateBookingAsync_ShouldRecalculatePrice_WhenDatesChange()
         {
             // Arrange
-            var booking = new Booking 
-            { 
-                Id = 1, RoomTypeId = 10, HotelId = 1, 
-                CheckInDate = DateTime.Today, CheckOutDate = DateTime.Today.AddDays(1),
+            var booking = new Booking
+            {
+                Id = 1,
+                RoomTypeId = 10,
+                HotelId = 1,
+                CheckInDate = DateTime.Today,
+                CheckOutDate = DateTime.Today.AddDays(1),
                 TotalPrice = 100
             };
             _mockBookingRepo.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(booking);
-            
+
             var roomType = new RoomType { Id = 10, HotelId = 1, Count = 10, BasePrice = 200 };
             _mockRoomTypeRepo.Setup(r => r.GetByIdAsync(10)).ReturnsAsync(roomType);
-            
+
             var mockSet = MockAsyncQueryable(new List<Booking>().AsQueryable());
             _mockBookingRepo.Setup(r => r.GetQueryable()).Returns(mockSet.Object);
-            
+
             _mockPricingRepo.Setup(r => r.GetAllAsync(It.IsAny<Expression<Func<RoomPricing, bool>>>(), null))
                 .ReturnsAsync(new List<RoomPricing>());
 
-            var dto = new UpdateBookingDto 
-            { 
-                Id = 1, 
-                CheckInDate = DateTime.Today.AddDays(10), 
+            var dto = new UpdateBookingDto
+            {
+                Id = 1,
+                CheckInDate = DateTime.Today.AddDays(10),
                 CheckOutDate = DateTime.Today.AddDays(12),
                 GuestCount = 1
             };
@@ -293,7 +296,7 @@ namespace BookingSystem.Tests.Services
                 .ReturnsAsync(new RoomType { Id = 1, HotelId = 2 });
 
             // Act & Assert
-            await Assert.ThrowsAsync<KeyNotFoundException>(() => 
+            await Assert.ThrowsAsync<KeyNotFoundException>(() =>
                 _service.CheckRoomTypeAvailabilityAsync(1, 1, DateTime.Now, DateTime.Now.AddDays(1)));
         }
 
@@ -349,7 +352,7 @@ namespace BookingSystem.Tests.Services
         public async Task UpdateBookingStatusAsync_ShouldThrow_StatusInvalid()
         {
             // Act & Assert
-            await Assert.ThrowsAsync<ArgumentException>(() => 
+            await Assert.ThrowsAsync<ArgumentException>(() =>
                 _service.UpdateBookingStatusAsync(1, 999));
         }
 
@@ -374,105 +377,105 @@ namespace BookingSystem.Tests.Services
             // Arrange
             _mockBookingRepo.Setup(r => r.GetAllAsync(null, It.IsAny<Func<IQueryable<Booking>, IQueryable<Booking>>>()))
                 .ReturnsAsync(new List<Booking>());
-            
+
             // Act
             await _service.GetAllBookingsAsync();
-            
+
             // Assert
             _mockBookingRepo.Verify(r => r.GetAllAsync(null, It.IsAny<Func<IQueryable<Booking>, IQueryable<Booking>>>()), Times.Once);
         }
-        
+
         [Fact]
         public async Task GetBookingsByDateRangeAsync_ShouldReturnList()
         {
             // Arrange
             _mockBookingRepo.Setup(r => r.GetAllAsync(It.IsAny<Expression<Func<Booking, bool>>>(), It.IsAny<Func<IQueryable<Booking>, IQueryable<Booking>>>()))
                 .ReturnsAsync(new List<Booking>());
-            
+
             // Act
             await _service.GetBookingsByDateRangeAsync(DateTime.Now, DateTime.Now.AddDays(1));
-            
+
             // Assert
-             _mockBookingRepo.Verify(r => r.GetAllAsync(It.IsAny<Expression<Func<Booking, bool>>>(), It.IsAny<Func<IQueryable<Booking>, IQueryable<Booking>>>()), Times.Once);
+            _mockBookingRepo.Verify(r => r.GetAllAsync(It.IsAny<Expression<Func<Booking, bool>>>(), It.IsAny<Func<IQueryable<Booking>, IQueryable<Booking>>>()), Times.Once);
         }
 
         [Fact]
         public async Task GetBookingsByRoomTypeIdAsync_ShouldReturnList()
         {
-             _mockBookingRepo.Setup(r => r.GetAllAsync(It.IsAny<Expression<Func<Booking, bool>>>(), It.IsAny<Func<IQueryable<Booking>, IQueryable<Booking>>>()))
-                .ReturnsAsync(new List<Booking>());
-            
-             await _service.GetBookingsByRoomTypeIdAsync(1);
-             
-             _mockBookingRepo.Verify(r => r.GetAllAsync(It.IsAny<Expression<Func<Booking, bool>>>(), It.IsAny<Func<IQueryable<Booking>, IQueryable<Booking>>>()), Times.Once);
+            _mockBookingRepo.Setup(r => r.GetAllAsync(It.IsAny<Expression<Func<Booking, bool>>>(), It.IsAny<Func<IQueryable<Booking>, IQueryable<Booking>>>()))
+               .ReturnsAsync(new List<Booking>());
+
+            await _service.GetBookingsByRoomTypeIdAsync(1);
+
+            _mockBookingRepo.Verify(r => r.GetAllAsync(It.IsAny<Expression<Func<Booking, bool>>>(), It.IsAny<Func<IQueryable<Booking>, IQueryable<Booking>>>()), Times.Once);
         }
 
         [Fact]
         public async Task GetBookingsByHotelIdAsync_ShouldReturnList()
         {
-             _mockBookingRepo.Setup(r => r.GetAllAsync(It.IsAny<Expression<Func<Booking, bool>>>(), It.IsAny<Func<IQueryable<Booking>, IQueryable<Booking>>>()))
-                .ReturnsAsync(new List<Booking>());
-            
-             await _service.GetBookingsByHotelIdAsync(1);
-             
-             _mockBookingRepo.Verify(r => r.GetAllAsync(It.IsAny<Expression<Func<Booking, bool>>>(), It.IsAny<Func<IQueryable<Booking>, IQueryable<Booking>>>()), Times.Once);
+            _mockBookingRepo.Setup(r => r.GetAllAsync(It.IsAny<Expression<Func<Booking, bool>>>(), It.IsAny<Func<IQueryable<Booking>, IQueryable<Booking>>>()))
+               .ReturnsAsync(new List<Booking>());
+
+            await _service.GetBookingsByHotelIdAsync(1);
+
+            _mockBookingRepo.Verify(r => r.GetAllAsync(It.IsAny<Expression<Func<Booking, bool>>>(), It.IsAny<Func<IQueryable<Booking>, IQueryable<Booking>>>()), Times.Once);
         }
 
         #endregion
 
         #region Helper for Async Queryable
-        
+
         private Mock<IQueryable<T>> MockAsyncQueryable<T>(IQueryable<T> data) where T : class
         {
             var mockSet = new Mock<IQueryable<T>>();
             mockSet.As<IAsyncEnumerable<T>>()
                 .Setup(m => m.GetAsyncEnumerator(It.IsAny<CancellationToken>()))
                 .Returns(new TestAsyncEnumerator<T>(data.GetEnumerator()));
-        
+
             mockSet.As<IQueryable<T>>()
                 .Setup(m => m.Provider)
                 .Returns(new TestAsyncQueryProvider<T>(data.Provider));
-        
+
             mockSet.As<IQueryable<T>>().Setup(m => m.Expression).Returns(data.Expression);
             mockSet.As<IQueryable<T>>().Setup(m => m.ElementType).Returns(data.ElementType);
             mockSet.As<IQueryable<T>>().Setup(m => m.GetEnumerator()).Returns(data.GetEnumerator());
-        
+
             return mockSet;
         }
-        
+
         #endregion
     }
-    
+
 
     internal class TestAsyncQueryProvider<TEntity> : IAsyncQueryProvider
     {
         private readonly IQueryProvider _inner;
-    
+
         internal TestAsyncQueryProvider(IQueryProvider inner)
         {
             _inner = inner;
         }
-    
+
         public IQueryable CreateQuery(Expression expression)
         {
             return new TestAsyncEnumerable<TEntity>(expression);
         }
-    
+
         public IQueryable<TElement> CreateQuery<TElement>(Expression expression)
         {
             return new TestAsyncEnumerable<TElement>(expression);
         }
-    
+
         public object Execute(Expression expression)
         {
             return _inner.Execute(expression);
         }
-    
+
         public TResult Execute<TResult>(Expression expression)
         {
             return _inner.Execute<TResult>(expression);
         }
-    
+
         public TResult ExecuteAsync<TResult>(Expression expression, CancellationToken cancellationToken = default)
         {
             var expectedResultType = typeof(TResult).GetGenericArguments()[0];
@@ -484,46 +487,46 @@ namespace BookingSystem.Tests.Services
                                  )
                                  .MakeGenericMethod(expectedResultType)
                                  .Invoke(this, new[] { expression });
-    
+
             return (TResult)typeof(Task).GetMethod(nameof(Task.FromResult))
                 .MakeGenericMethod(expectedResultType)
                 .Invoke(null, new[] { executionResult });
         }
     }
-    
+
     internal class TestAsyncEnumerable<T> : EnumerableQuery<T>, IAsyncEnumerable<T>, IQueryable<T>
     {
         public TestAsyncEnumerable(IEnumerable<T> enumerable) : base(enumerable) { }
         public TestAsyncEnumerable(Expression expression) : base(expression) { }
-    
+
         public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
         {
             return new TestAsyncEnumerator<T>(this.AsEnumerable().GetEnumerator());
         }
-    
+
         IQueryProvider IQueryable.Provider => new TestAsyncQueryProvider<T>(this);
     }
-    
+
     internal class TestAsyncEnumerator<T> : IAsyncEnumerator<T>
     {
         private readonly IEnumerator<T> _inner;
-    
+
         public TestAsyncEnumerator(IEnumerator<T> inner)
         {
             _inner = inner;
         }
-    
+
         public ValueTask DisposeAsync()
         {
             _inner.Dispose();
             return ValueTask.CompletedTask;
         }
-    
+
         public ValueTask<bool> MoveNextAsync()
         {
             return ValueTask.FromResult(_inner.MoveNext());
         }
-        
+
         public T Current => _inner.Current;
     }
 }

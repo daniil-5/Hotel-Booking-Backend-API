@@ -39,11 +39,11 @@ public class RoomTypeService : IRoomTypeService
         var hotel = await _hotelRepository.GetByIdAsync(roomTypeDto.HotelId);
         if (hotel == null)
             throw new KeyNotFoundException($"Hotel with ID {roomTypeDto.HotelId} not found.");
-        
+
         var existingRoomType = await _roomTypeRepository.GetByIdAsync(roomTypeDto.Id);
         if (existingRoomType == null)
             throw new KeyNotFoundException($"RoomType with ID {roomTypeDto.Id} not found.");
-        
+
         existingRoomType.Name = roomTypeDto.Name;
         existingRoomType.Description = roomTypeDto.Description;
         existingRoomType.Capacity = roomTypeDto.Capacity;
@@ -62,17 +62,17 @@ public class RoomTypeService : IRoomTypeService
         var roomType = await _roomTypeRepository.GetByIdAsync(id);
         if (roomType == null)
             throw new KeyNotFoundException($"RoomType with ID {id} not found.");
-        
-        var activeBookings = await _bookingRepository.CountAsync(b => 
-            b.RoomTypeId == id && 
-            b.Status != (int)BookingStatus.Cancelled && 
+
+        var activeBookings = await _bookingRepository.CountAsync(b =>
+            b.RoomTypeId == id &&
+            b.Status != (int)BookingStatus.Cancelled &&
             b.CheckOutDate > DateTime.UtcNow);
 
         if (activeBookings > 0)
         {
             throw new InvalidOperationException("Cannot delete room type that has active bookings.");
         }
-        
+
         await _roomTypeRepository.DeleteAsync(id);
     }
 
@@ -87,15 +87,15 @@ public class RoomTypeService : IRoomTypeService
         var roomTypes = await _roomTypeRepository.GetAllAsync();
         return roomTypes.Select(rt => rt.ToDto()).ToList();
     }
-    
+
     public async Task<IEnumerable<RoomTypeDto>> GetRoomTypesByHotelIdAsync(int hotelId)
     {
         var hotel = await _hotelRepository.GetByIdAsync(hotelId);
         if (hotel == null)
             throw new KeyNotFoundException($"Hotel with ID {hotelId} not found.");
-        
+
         var roomTypes = await _roomTypeRepository.GetAllAsync(rt => rt.HotelId == hotelId && !rt.IsDeleted);
-        
+
         return roomTypes.Select(rt => rt.ToDto()).ToList();
     }
 }

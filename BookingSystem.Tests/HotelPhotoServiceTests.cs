@@ -29,7 +29,7 @@ namespace BookingSystem.Tests.Services
         {
             // Arrange
             var dto = new CreateHotelPhotoDto { HotelId = 1, Url = "test.jpg", Description = "Test" };
-            
+
             // Act
             var result = await _service.CreateHotelPhotoAsync(dto);
 
@@ -47,10 +47,10 @@ namespace BookingSystem.Tests.Services
         public async Task UploadHotelPhotoAsync_ShouldThrow_FileIsNull()
         {
             // Arrange & Act & Assert
-            await Assert.ThrowsAsync<ArgumentException>(() => 
+            await Assert.ThrowsAsync<ArgumentException>(() =>
                 _service.UploadHotelPhotoAsync(null, 1));
         }
-        
+
         [Fact]
         public async Task UploadHotelPhotoAsync_ShouldThrow_FileIsEmpty()
         {
@@ -59,7 +59,7 @@ namespace BookingSystem.Tests.Services
             file.Setup(f => f.Length).Returns(0);
 
             // Act & Assert
-            await Assert.ThrowsAsync<ArgumentException>(() => 
+            await Assert.ThrowsAsync<ArgumentException>(() =>
                 _service.UploadHotelPhotoAsync(file.Object, 1));
         }
 
@@ -71,7 +71,7 @@ namespace BookingSystem.Tests.Services
             file.Setup(f => f.Length).Returns(100);
 
             // Act & Assert
-            await Assert.ThrowsAsync<ArgumentException>(() => 
+            await Assert.ThrowsAsync<ArgumentException>(() =>
                 _service.UploadHotelPhotoAsync(file.Object, 0));
         }
 
@@ -81,9 +81,9 @@ namespace BookingSystem.Tests.Services
             // Arrange
             var file = new Mock<IFormFile>();
             file.Setup(f => f.Length).Returns(100);
-            
+
             var uploadResult = new PhotoUploadResult { Url = "http://cloudinary.com/img.jpg", PublicId = "123" };
-            
+
             _mockCloudinaryRepo.Setup(c => c.UploadPhotoAsync(file.Object, 1, "desc"))
                 .ReturnsAsync(uploadResult);
 
@@ -94,8 +94,8 @@ namespace BookingSystem.Tests.Services
             Assert.Equal("http://cloudinary.com/img.jpg", result.Url);
             Assert.Equal("123", result.PublicId);
             Assert.True(result.IsMain);
-            
-            _mockRepo.Verify(r => r.AddAsync(It.Is<HotelPhoto>(p => 
+
+            _mockRepo.Verify(r => r.AddAsync(It.Is<HotelPhoto>(p =>
                 p.PublicId == "123" && p.IsMain == true
             )), Times.Once);
         }
@@ -153,9 +153,9 @@ namespace BookingSystem.Tests.Services
         {
             // Arrange
             _mockRepo.Setup(r => r.GetByIdAsync(1)).ReturnsAsync((HotelPhoto)null);
-            
+
             // Act & Assert
-            await Assert.ThrowsAsync<KeyNotFoundException>(() => 
+            await Assert.ThrowsAsync<KeyNotFoundException>(() =>
                 _service.UpdateHotelPhotoAsync(new UpdateHotelPhotoDto { Id = 1 }));
         }
 
@@ -165,7 +165,7 @@ namespace BookingSystem.Tests.Services
             // Arrange
             var existing = new HotelPhoto { Id = 1, Url = "old" };
             _mockRepo.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(existing);
-            
+
             var dto = new UpdateHotelPhotoDto { Id = 1, Url = "new", Description = "Updated" };
 
             // Act
@@ -197,7 +197,7 @@ namespace BookingSystem.Tests.Services
             // Arrange
             var photo = new HotelPhoto { Id = 1, PublicId = "123" };
             _mockRepo.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(photo);
-            
+
             _mockCloudinaryRepo.Setup(c => c.DeletePhotoAsync("123")).ReturnsAsync(false);
 
             // Act & Assert
@@ -270,7 +270,7 @@ namespace BookingSystem.Tests.Services
             // Assert
             Assert.True(result.IsMain);
             Assert.False(photo1.IsMain);
-            
+
             _mockRepo.Verify(r => r.UpdateAsync(It.IsAny<HotelPhoto>()), Times.Exactly(2));
         }
 
@@ -283,10 +283,10 @@ namespace BookingSystem.Tests.Services
         {
             // Arrange
             _mockRepo.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(new HotelPhoto { Id = 1 });
-            
+
             // Act
             var result = await _service.GetHotelPhotoByIdAsync(1);
-            
+
             // Assert
             Assert.NotNull(result);
         }
@@ -297,10 +297,10 @@ namespace BookingSystem.Tests.Services
             // Arrange
             _mockRepo.Setup(r => r.GetAllAsync())
                 .ReturnsAsync(new List<HotelPhoto> { new HotelPhoto() });
-            
+
             // Act
             var result = await _service.GetAllHotelPhotosAsync();
-            
+
             // Assert
             Assert.Single(result);
         }
@@ -323,15 +323,15 @@ namespace BookingSystem.Tests.Services
             // Assert
             Assert.Single(result);
         }
-        
+
         [Fact]
         public async Task GetTransformedImageAsync_ShouldThrow_WhenNotFound()
         {
             // Arrange
             _mockRepo.Setup(r => r.GetByIdAsync(1)).ReturnsAsync((HotelPhoto)null);
-            
+
             // Act & Assert
-            await Assert.ThrowsAsync<KeyNotFoundException>(() => 
+            await Assert.ThrowsAsync<KeyNotFoundException>(() =>
                 _service.GetTransformedImageUrlAsync(1, "trans"));
         }
 

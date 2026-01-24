@@ -16,7 +16,7 @@ namespace BookingSystem.Migrations
                 table: "bookings",
                 nullable: false,
                 defaultValue: 0);
-            
+
             // 2. Обновляем существующие данные
             // Вариант 1: Привязываем к отелю с ID = 1 (убедитесь, что такой отель существует)
             migrationBuilder.Sql(@"
@@ -24,13 +24,13 @@ namespace BookingSystem.Migrations
             SET hotel_id = 1
             WHERE hotel_id = 0;
         ");
-        
+
             // 3. Создаем индекс
             migrationBuilder.CreateIndex(
                 name: "ix_bookings_hotel_id",
                 table: "bookings",
                 column: "hotel_id");
-            
+
             // 4. Добавляем внешний ключ ПОСЛЕ обновления данных
             migrationBuilder.AddForeignKey(
                 name: "fk_bookings_hotels_hotel_id",
@@ -47,11 +47,11 @@ namespace BookingSystem.Migrations
             migrationBuilder.DropForeignKey(
                 name: "fk_bookings_hotels_hotel_id",
                 table: "bookings");
-            
+
             migrationBuilder.DropIndex(
                 name: "ix_bookings_hotel_id",
                 table: "bookings");
-            
+
             migrationBuilder.DropColumn(
                 name: "hotel_id",
                 table: "bookings");

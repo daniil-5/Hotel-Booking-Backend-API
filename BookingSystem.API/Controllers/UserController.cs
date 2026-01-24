@@ -32,9 +32,9 @@ namespace BookingSystem.API.Controllers
         {
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var currentUserRole = User.FindFirstValue(ClaimTypes.Role);
-            
-            if (currentUserId != id.ToString() && 
-                currentUserRole != "Admin" && 
+
+            if (currentUserId != id.ToString() &&
+                currentUserRole != "Admin" &&
                 currentUserRole != "Manager")
             {
                 return Forbid();
@@ -63,13 +63,13 @@ namespace BookingSystem.API.Controllers
         [Authorize]
         public async Task<IActionResult> UpdateUser(int id, UpdateUserDto userDto)
         {
-            if (id != userDto.Id) 
+            if (id != userDto.Id)
                 return BadRequest("ID mismatch");
 
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var currentUserRole = User.FindFirstValue(ClaimTypes.Role);
-            
-            if (currentUserId != id.ToString() && currentUserRole != "Admin" && 
+
+            if (currentUserId != id.ToString() && currentUserRole != "Admin" &&
                 !(currentUserRole == "Manager" && userDto.Role != UserRole.Admin))
             {
                 return Forbid();
@@ -115,7 +115,7 @@ namespace BookingSystem.API.Controllers
         {
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var currentUserRole = User.FindFirstValue(ClaimTypes.Role);
-            
+
             if (currentUserId != changePasswordDto.UserId.ToString() && currentUserRole != "Admin")
             {
                 return Forbid();
@@ -134,7 +134,7 @@ namespace BookingSystem.API.Controllers
                 return BadRequest(ex.Message);
             }
         }
-        
+
         [HttpGet("profile")]
         [Authorize]
         public async Task<ActionResult<UserDto>> GetUserProfile()
@@ -148,7 +148,7 @@ namespace BookingSystem.API.Controllers
             var user = await _userService.GetUserByIdAsync(int.Parse(userId));
             return user != null ? Ok(user) : NotFound();
         }
-        
+
         [HttpGet("by_email/{email}")]
         [Authorize(Roles = "Admin,Manager")]
         public async Task<ActionResult<UserDto>> GetUserByEmail(string email)
@@ -156,7 +156,7 @@ namespace BookingSystem.API.Controllers
             var user = await _userService.GetUserByEmailAsync(email);
             return user != null ? Ok(user) : NotFound();
         }
-        
+
         [HttpGet("by_username/{username}")]
         [Authorize(Roles = "Admin,Manager")]
         public async Task<ActionResult<UserDto>> GetUserByUsername(string username)

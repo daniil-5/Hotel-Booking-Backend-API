@@ -35,10 +35,10 @@ namespace BookingSystem.Application.Mappers
                 LastName = dto.LastName,
                 PhoneNumber = dto.PhoneNumber,
                 Role = (int)UserRole.Guest,
-                PasswordHash =  BCrypt.Net.BCrypt.HashPassword(dto.Password),
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
             };
         }
-        
+
         public static User ToEntity(this UserDto dto)
         {
             if (dto == null) return null;

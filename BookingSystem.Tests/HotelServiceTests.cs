@@ -77,11 +77,11 @@ namespace BookingSystem.Tests.Services
         {
             // Arrange
             var existingHotel = new Hotel { Id = 1, Name = "Old Name" };
-            var dto = new UpdateHotelDto 
-            { 
-                Id = 1, 
-                Name = "New Name", 
-                Description = "Desc", 
+            var dto = new UpdateHotelDto
+            {
+                Id = 1,
+                Name = "New Name",
+                Description = "Desc",
                 Location = "Loc",
                 Rating = 5,
                 BasePrice = 200
@@ -89,10 +89,10 @@ namespace BookingSystem.Tests.Services
 
             _mockHotelRepo
                 .Setup(r => r.GetByIdAsync(
-                    1, 
+                    1,
                     It.IsAny<Func<IQueryable<Hotel>, IQueryable<Hotel>>>()))
                 .ReturnsAsync(existingHotel);
-            
+
             // Act
             var result = await _service.UpdateHotelAsync(dto);
 
@@ -106,16 +106,16 @@ namespace BookingSystem.Tests.Services
         public async Task UpdateHotelAsync_ShouldHandleAmenities_NewAndExisting()
         {
             // Arrange
-            var existingHotel = new Hotel 
-            { 
-                Id = 1, 
-                Amenities = new List<Amenity> { new Amenity { Name = "OldAmenity" } } 
+            var existingHotel = new Hotel
+            {
+                Id = 1,
+                Amenities = new List<Amenity> { new Amenity { Name = "OldAmenity" } }
             };
 
             _mockHotelRepo.Setup(r => r.GetByIdAsync(1,
                     It.IsAny<Func<IQueryable<Hotel>, IQueryable<Hotel>>>()))
                 .ReturnsAsync(existingHotel);
-            
+
             var dbAmenity = new Amenity { Id = 10, Name = "Wifi" };
             _mockAmenityRepo.Setup(r => r.GetAllAsync())
                 .ReturnsAsync(new List<Amenity> { dbAmenity });
@@ -127,7 +127,7 @@ namespace BookingSystem.Tests.Services
                 {
                     new AmenityDto { Name = "Wifi" },
                     new AmenityDto { Name = "Pool", Description = "New Pool" },
-                    new AmenityDto { Name = "Wifi" } 
+                    new AmenityDto { Name = "Wifi" }
                 }
             };
 
@@ -138,7 +138,7 @@ namespace BookingSystem.Tests.Services
             Assert.Equal(2, existingHotel.Amenities.Count);
             Assert.Contains(existingHotel.Amenities, a => a.Name == "Wifi");
             Assert.Contains(existingHotel.Amenities, a => a.Name == "Pool");
-            
+
             _mockHotelRepo.Verify(r => r.UpdateAsync(existingHotel), Times.Once);
         }
 
@@ -213,7 +213,7 @@ namespace BookingSystem.Tests.Services
             // Arrange
             var list = new List<Hotel> { new Hotel(), new Hotel() };
             _mockHotelRepo.Setup(r => r.GetAllAsync(
-                It.IsAny<Expression<Func<Hotel, bool>>>(), 
+                It.IsAny<Expression<Func<Hotel, bool>>>(),
                 It.IsAny<Func<IQueryable<Hotel>, IQueryable<Hotel>>>()))
                 .ReturnsAsync(list);
 
@@ -232,8 +232,8 @@ namespace BookingSystem.Tests.Services
         public async Task SearchHotelsAsync_ShouldConstructQueryAndReturnResults()
         {
             // Arrange
-            var searchDto = new HotelSearchDto 
-            { 
+            var searchDto = new HotelSearchDto
+            {
                 Name = "Grand",
                 Location = "Paris",
                 MinRating = 4,
@@ -249,7 +249,7 @@ namespace BookingSystem.Tests.Services
             };
 
             var hotels = new List<Hotel> { new Hotel { Name = "Grand Hotel Paris" } };
-            
+
             _mockHotelRepo.Setup(r => r.SearchHotelsAsync(
                 It.IsAny<Expression<Func<Hotel, bool>>>(),
                 It.IsAny<Func<IQueryable<Hotel>, IOrderedQueryable<Hotel>>>(),
@@ -270,7 +270,7 @@ namespace BookingSystem.Tests.Services
         {
             // Arrange
             var searchDto = new HotelSearchDto { SortBy = "name" };
-            
+
             _mockHotelRepo.Setup(r => r.SearchHotelsAsync(
                 It.IsAny<Expression<Func<Hotel, bool>>>(),
                 It.IsAny<Func<IQueryable<Hotel>, IOrderedQueryable<Hotel>>>(),

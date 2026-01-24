@@ -85,7 +85,7 @@ namespace BookingSystem.Tests.Services
             // Arrange
             var user = new User { Id = 1, Email = "old@test.com" };
             var otherUser = new User { Id = 2, Email = "taken@test.com" };
-            
+
             _mockUserRepo.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(user);
             _mockUserRepo.Setup(r => r.GetByEmailAsync("taken@test.com")).ReturnsAsync(otherUser);
 
@@ -95,14 +95,14 @@ namespace BookingSystem.Tests.Services
             var ex = await Assert.ThrowsAsync<ApplicationException>(() => _service.UpdateUserAsync(dto));
             Assert.Equal("Email is already in use", ex.Message);
         }
-        
+
         [Fact]
         public async Task UpdateUserAsync_ShouldThrowUsernameTaken()
         {
             // Arrange
             var user = new User { Id = 1, Username = "oldname" };
             var otherUser = new User { Id = 2, Username = "takenname" };
-            
+
             _mockUserRepo.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(user);
             _mockUserRepo.Setup(r => r.GetByEmailAsync("takenname")).ReturnsAsync(otherUser);
 
@@ -121,12 +121,12 @@ namespace BookingSystem.Tests.Services
             _mockUserRepo.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(user);
             _mockUserRepo.Setup(r => r.GetByEmailAsync(It.IsAny<string>())).ReturnsAsync((User)null);
 
-            var dto = new UpdateUserDto 
-            { 
-                Id = 1, 
-                Email = "new@test.com", 
-                Username = "new", 
-                Role = UserRole.Manager 
+            var dto = new UpdateUserDto
+            {
+                Id = 1,
+                Email = "new@test.com",
+                Username = "new",
+                Role = UserRole.Manager
             };
 
             // Act
@@ -150,7 +150,7 @@ namespace BookingSystem.Tests.Services
             _mockUserRepo.Setup(r => r.GetByIdAsync(1)).ReturnsAsync((User)null);
 
             // Act & Assert
-            var ex = await Assert.ThrowsAsync<ApplicationException>(() => 
+            var ex = await Assert.ThrowsAsync<ApplicationException>(() =>
                 _service.ChangePasswordAsync(new ChangePasswordDto { UserId = 1 }));
             Assert.Equal("User with ID 1 not found", ex.Message);
         }
@@ -163,12 +163,12 @@ namespace BookingSystem.Tests.Services
             _mockUserRepo.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(user);
 
             // Act
-            var result = await _service.ChangePasswordAsync(new ChangePasswordDto 
-            { 
-                UserId = 1, 
-                CurrentPassword = "Wrong", 
-                NewPassword = "New", 
-                ConfirmPassword = "New" 
+            var result = await _service.ChangePasswordAsync(new ChangePasswordDto
+            {
+                UserId = 1,
+                CurrentPassword = "Wrong",
+                NewPassword = "New",
+                ConfirmPassword = "New"
             });
 
             // Assert
@@ -183,12 +183,12 @@ namespace BookingSystem.Tests.Services
             _mockUserRepo.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(user);
 
             // Act & Assert
-            var ex = await Assert.ThrowsAsync<ApplicationException>(() => _service.ChangePasswordAsync(new ChangePasswordDto 
-            { 
-                UserId = 1, 
-                CurrentPassword = "Correct", 
-                NewPassword = "New", 
-                ConfirmPassword = "Mismatch" 
+            var ex = await Assert.ThrowsAsync<ApplicationException>(() => _service.ChangePasswordAsync(new ChangePasswordDto
+            {
+                UserId = 1,
+                CurrentPassword = "Correct",
+                NewPassword = "New",
+                ConfirmPassword = "Mismatch"
             }));
             Assert.Equal("New password and confirmation do not match", ex.Message);
         }
@@ -201,12 +201,12 @@ namespace BookingSystem.Tests.Services
             _mockUserRepo.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(user);
 
             // Act
-            var result = await _service.ChangePasswordAsync(new ChangePasswordDto 
-            { 
-                UserId = 1, 
-                CurrentPassword = "Correct", 
-                NewPassword = "NewPass", 
-                ConfirmPassword = "NewPass" 
+            var result = await _service.ChangePasswordAsync(new ChangePasswordDto
+            {
+                UserId = 1,
+                CurrentPassword = "Correct",
+                NewPassword = "NewPass",
+                ConfirmPassword = "NewPass"
             });
 
             // Assert
@@ -222,8 +222,8 @@ namespace BookingSystem.Tests.Services
         public async Task SearchUsersAsync_ShouldReturnResults()
         {
             // Arrange
-            var users = new List<User> 
-            { 
+            var users = new List<User>
+            {
                 new User { Username = "Alice", Email = "alice@test.com" },
                 new User { Username = "Bob", Email = "bob@test.com" }
             };
@@ -235,13 +235,13 @@ namespace BookingSystem.Tests.Services
                 It.IsAny<int>()
             )).ReturnsAsync((users, 2));
 
-            var dto = new UserSearchDto 
-            { 
-                SearchTerm = "test", 
-                SortBy = "username", 
+            var dto = new UserSearchDto
+            {
+                SearchTerm = "test",
+                SortBy = "username",
                 SortDescending = false,
-                PageNumber = 1, 
-                PageSize = 10 
+                PageNumber = 1,
+                PageSize = 10
             };
 
             // Act
@@ -252,13 +252,13 @@ namespace BookingSystem.Tests.Services
             Assert.Equal(2, result.Users.Count());
             Assert.Equal(1, result.TotalPages);
         }
-        
+
         [Fact]
         public async Task SearchUsersAsync_ShouldHandleRoleFilter()
         {
             // Arrange
             var dto = new UserSearchDto { Role = UserRole.Admin, PageNumber = 1, PageSize = 10 };
-            
+
             _mockUserRepo.Setup(r => r.SearchUsersAsync(
                 It.IsAny<Expression<Func<User, bool>>>(),
                 It.IsAny<Func<IQueryable<User>, IOrderedQueryable<User>>>(),
@@ -268,7 +268,7 @@ namespace BookingSystem.Tests.Services
 
             // Act
             await _service.SearchUsersAsync(dto);
-            
+
             // Assert
             _mockUserRepo.Verify(r => r.SearchUsersAsync(
                 It.IsAny<Expression<Func<User, bool>>>(),
@@ -286,10 +286,10 @@ namespace BookingSystem.Tests.Services
             // Arrange
             var user = new User { Id = 1, Username = "test" };
             _mockUserRepo.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(user);
-            
+
             // Act
             var result = await _service.GetUserByIdAsync(1);
-            
+
             // Assert
             Assert.Equal("test", result.Username);
         }
@@ -300,25 +300,25 @@ namespace BookingSystem.Tests.Services
             // Arrange
             var user = new User { Email = "test@test.com" };
             _mockUserRepo.Setup(r => r.GetByEmailAsync("test@test.com")).ReturnsAsync(user);
-            
+
             // Act
             var result = await _service.GetUserByEmailAsync("test@test.com");
-            
+
             // Assert
             Assert.Equal("test@test.com", result.Email);
         }
-        
+
         [Fact]
         public async Task GetAllUsersAsync_ShouldReturnList()
         {
-             // Arrange
-             _mockUserRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User> { new User() });
-             
-             // Act
-             var result = await _service.GetAllUsersAsync();
-             
-             // Assert
-             Assert.Single(result);
+            // Arrange
+            _mockUserRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User> { new User() });
+
+            // Act
+            var result = await _service.GetAllUsersAsync();
+
+            // Assert
+            Assert.Single(result);
         }
 
         [Fact]
@@ -326,7 +326,7 @@ namespace BookingSystem.Tests.Services
         {
             // Arrange
             _mockUserRepo.Setup(r => r.GetByIdAsync(1)).ReturnsAsync((User)null);
-            
+
             // Act & Assert
             await Assert.ThrowsAsync<ApplicationException>(() => _service.DeleteUserAsync(1));
         }
@@ -336,24 +336,24 @@ namespace BookingSystem.Tests.Services
         {
             // Arrange
             _mockUserRepo.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(new User());
-            
+
             // Act
             await _service.DeleteUserAsync(1);
-            
+
             // Assert
             _mockUserRepo.Verify(r => r.DeleteAsync(1), Times.Once);
         }
-        
+
         [Fact]
         public async Task VerifyUserPasswordAsync_ShouldCorrect()
         {
             // Arrange
             var user = new User { PasswordHash = BCrypt.Net.BCrypt.HashPassword("Pass") };
             _mockUserRepo.Setup(r => r.GetByEmailAsync("test")).ReturnsAsync(user);
-            
+
             // Act
             var result = await _service.VerifyUserPasswordAsync("test", "Pass");
-            
+
             // Assert
             Assert.True(result);
         }

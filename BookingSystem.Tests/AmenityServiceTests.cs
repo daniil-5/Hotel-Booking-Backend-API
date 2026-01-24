@@ -21,15 +21,15 @@ namespace BookingSystem.Tests.Services
 
         #region CreateAmenityAsync Tests
 
-        
+
         [Fact]
         public async Task CreateAmenityAsync_ShouldAddAmenity()
         {
             // Arrange
             var createDto = new CreateAmenityDto { Name = "Pool", Description = "Outdoor pool" };
-            
+
             _mockAmenityRepo.Setup(repo => repo.GetAllAsync(
-                    It.IsAny<Expression<Func<Amenity, bool>>>(), 
+                    It.IsAny<Expression<Func<Amenity, bool>>>(),
                     null))
                 .ReturnsAsync(new List<Amenity>());
 
@@ -41,22 +41,22 @@ namespace BookingSystem.Tests.Services
             Assert.Equal(createDto.Name, result.Name);
             Assert.Equal(createDto.Description, result.Description);
         }
-        
+
         [Fact]
         public async Task CreateAmenityAsync_ShouldThrowInvalidOperationException()
         {
             // Arrange
             var createDto = new CreateAmenityDto { Name = "WiFi", Description = "Free internet" };
             var existingAmenities = new List<Amenity> { new Amenity { Id = 1, Name = "WiFi" } };
-            
+
             _mockAmenityRepo.Setup(repo => repo.GetAllAsync(
                 It.IsAny<Expression<Func<Amenity, bool>>>()))
                 .ReturnsAsync(existingAmenities);
 
             // Act & Assert
-            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => 
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
                 _service.CreateAmenityAsync(createDto));
-            
+
             Assert.Equal("Amenity 'WiFi' already exists.", exception.Message);
             _mockAmenityRepo.Verify(repo => repo.AddAsync(It.IsAny<Amenity>()), Times.Never);
         }
@@ -64,7 +64,7 @@ namespace BookingSystem.Tests.Services
         #endregion
 
         #region UpdateAmenityAsync Tests
-        
+
         [Fact]
         public async Task UpdateAmenityAsync_ShouldUpdate()
         {
@@ -82,12 +82,12 @@ namespace BookingSystem.Tests.Services
             Assert.Equal("Updated Gym", result.Name);
             Assert.Equal("New Machines", result.Description);
             Assert.Equal(1, result.Id);
-            
+
             Assert.Equal("Updated Gym", existingAmenity.Name);
-            
+
             _mockAmenityRepo.Verify(repo => repo.UpdateAsync(existingAmenity), Times.Once);
         }
-        
+
         [Fact]
         public async Task UpdateAmenityAsync_ShouldThrowKeyNotFoundException()
         {
@@ -99,7 +99,7 @@ namespace BookingSystem.Tests.Services
 
             // Act & Assert
             await Assert.ThrowsAsync<KeyNotFoundException>(() => _service.UpdateAmenityAsync(updateDto));
-            
+
             _mockAmenityRepo.Verify(repo => repo.UpdateAsync(It.IsAny<Amenity>()), Times.Never);
         }
 
@@ -116,7 +116,7 @@ namespace BookingSystem.Tests.Services
 
             // Act & Assert
             await Assert.ThrowsAsync<KeyNotFoundException>(() => _service.DeleteAmenityAsync(1));
-            
+
             _mockAmenityRepo.Verify(repo => repo.DeleteAsync(It.IsAny<int>()), Times.Never);
         }
 

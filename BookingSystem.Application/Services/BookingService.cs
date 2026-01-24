@@ -19,8 +19,8 @@ namespace BookingSystem.Application.Services
         private readonly IRepository<RoomType> _roomTypeRepository;
         private readonly IHotelRepository _hotelRepository;
         private readonly IRepository<RoomPricing> _pricingRepository;
-        private readonly IUserRepository _userRepository; 
-        
+        private readonly IUserRepository _userRepository;
+
         private readonly IKafkaProducer _kafkaProducer;
         private readonly KafkaSettings _kafkaSettings;
         private readonly ILogger<BookingService> _logger;
@@ -47,11 +47,11 @@ namespace BookingSystem.Application.Services
 
         public async Task<BookingResponseDto> GetBookingByIdAsync(int id)
         {
-            var booking = await _bookingRepository.GetByIdAsync(id, 
+            var booking = await _bookingRepository.GetByIdAsync(id,
                 include: b => b.Include(x => x.Hotel)
                                .Include(x => x.RoomType)
                                .Include(x => x.User));
-                               
+
             return booking?.ToDto();
         }
 
@@ -61,7 +61,7 @@ namespace BookingSystem.Application.Services
                 include: query => query.Include(b => b.Hotel)
                                       .Include(b => b.RoomType)
                                       .Include(b => b.User));
-                                      
+
             return bookings.Select(b => b.ToDto());
         }
 
@@ -69,7 +69,7 @@ namespace BookingSystem.Application.Services
         {
             if (dto.CheckInDate >= dto.CheckOutDate)
                 throw new ArgumentException("Check-out date must be after check-in date");
-            
+
             var command = new CreateBookingCommand
             {
                 UserId = dto.UserId,
@@ -80,13 +80,13 @@ namespace BookingSystem.Application.Services
                 GuestCount = dto.GuestCount,
                 RequestTime = DateTime.UtcNow
             };
-            
+
             await _kafkaProducer.SendMessageAsync(
-                _kafkaSettings.Topics.BookingRequests, 
+                _kafkaSettings.Topics.BookingRequests,
                 dto.RoomTypeId.ToString(),
                 command
             );
-            
+
             return command.TrackingId;
         }
 
@@ -95,10 +95,10 @@ namespace BookingSystem.Application.Services
             var booking = await _bookingRepository.FindAsync(b => b.TrackingId == trackingId);
             return booking?.ToDto();
         }
-      
+
         public async Task<BookingResponseDto> UpdateBookingAsync(UpdateBookingDto dto)
         {
-            var booking = await _bookingRepository.GetByIdAsync(dto.Id) 
+            var booking = await _bookingRepository.GetByIdAsync(dto.Id)
                 ?? throw new KeyNotFoundException("Booking not found");
 
             if (booking.CheckInDate != dto.CheckInDate || booking.CheckOutDate != dto.CheckOutDate)
@@ -108,7 +108,7 @@ namespace BookingSystem.Application.Services
 
                 var isAvailable = await CheckRoomTypeAvailabilityAsync(
                     booking.RoomTypeId,
-                    booking.HotelId, 
+                    booking.HotelId,
                     dto.CheckInDate,
                     dto.CheckOutDate,
                     booking.Id);
@@ -154,7 +154,7 @@ namespace BookingSystem.Application.Services
 
         public async Task<IEnumerable<BookingResponseDto>> GetBookingsByUserIdAsync(int userId)
         {
-            try 
+            try
             {
                 var bookings = await _bookingRepository.GetAllAsync(
                     b => b.UserId == userId && !b.IsDeleted,
@@ -174,16 +174,16 @@ namespace BookingSystem.Application.Services
         }
 
         public async Task<bool> CheckRoomTypeAvailabilityAsync(
-            int roomTypeId, 
+            int roomTypeId,
             int hotelId,
-            DateTime checkInDate, 
+            DateTime checkInDate,
             DateTime checkOutDate,
             int? excludeBookingId = null)
         {
             var roomType = await _roomTypeRepository.GetByIdAsync(roomTypeId);
             if (roomType == null || roomType.HotelId != hotelId)
                 throw new KeyNotFoundException($"Room type with ID {roomTypeId} not found in hotel {hotelId}");
-            
+
             var totalRooms = roomType.Count;
 
             if (totalRooms <= 0)
@@ -210,7 +210,7 @@ namespace BookingSystem.Application.Services
 
             booking.Status = (int)BookingStatus.Cancelled;
             booking.UpdatedAt = DateTime.UtcNow;
-            
+
             await _bookingRepository.UpdateAsync(booking);
             return booking.ToDto();
         }
@@ -246,7 +246,7 @@ namespace BookingSystem.Application.Services
             var bookings = await _bookingRepository.GetAllAsync(
                 b => b.RoomTypeId == roomTypeId,
                 include: query => query.Include(b => b.Hotel).Include(b => b.User));
-                                      
+
             return bookings.Select(b => b.ToDto());
         }
 
@@ -255,7 +255,7 @@ namespace BookingSystem.Application.Services
             var bookings = await _bookingRepository.GetAllAsync(
                 b => b.HotelId == hotelId,
                 include: query => query.Include(b => b.RoomType).Include(b => b.User));
-                                      
+
             return bookings.Select(b => b.ToDto());
         }
 
@@ -263,8 +263,8 @@ namespace BookingSystem.Application.Services
         {
             decimal totalPrice = 0;
             int nightCount = (int)(dto.CheckOutDate.Date - dto.CheckInDate.Date).TotalDays;
-            
-            var pricingRecords = await _pricingRepository.GetAllAsync(rp => 
+
+            var pricingRecords = await _pricingRepository.GetAllAsync(rp =>
                 rp.RoomTypeId == dto.RoomTypeId &&
                 rp.Date >= dto.CheckInDate.Date &&
                 rp.Date < dto.CheckOutDate.Date);
@@ -273,7 +273,7 @@ namespace BookingSystem.Application.Services
             {
                 var coveredDates = pricingRecords.Select(p => p.Date.Date).ToHashSet();
                 totalPrice += pricingRecords.Sum(p => p.Price);
-                
+
                 if (coveredDates.Count < nightCount)
                 {
                     var roomType = await _roomTypeRepository.GetByIdAsync(dto.RoomTypeId);
@@ -289,7 +289,7 @@ namespace BookingSystem.Application.Services
                 var roomType = await _roomTypeRepository.GetByIdAsync(dto.RoomTypeId);
                 totalPrice = roomType.BasePrice * nightCount;
             }
-            
+
             return totalPrice;
         }
     }
