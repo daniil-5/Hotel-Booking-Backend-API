@@ -1,8 +1,9 @@
-using CloudinaryDotNet;
-using CloudinaryDotNet.Actions;
-using Microsoft.AspNetCore.Http;
 using BookingSystem.Domain.Interfaces;
 using BookingSystem.Domain.Other;
+using CloudinaryDotNet.Actions;
+using CloudinaryDotNet;
+using Microsoft.AspNetCore.Http;
+
 namespace BookingSystem.Infrastructure.Repositories;
 
 public class CloudinaryPhotoRepository : IPhotoRepository
@@ -96,16 +97,6 @@ public class CloudinaryPhotoRepository : IPhotoRepository
         return results;
     }
 
-    public async Task<bool> CreateHotelDirectoryAsync(int hotelId, string hotelName)
-    {
-        if (hotelId <= 0)
-            throw new ArgumentException("Hotel ID must be a positive number", nameof(hotelId));
-
-        if (string.IsNullOrEmpty(hotelName))
-            throw new ArgumentException("Hotel name is required", nameof(hotelName));
-        return await Task.FromResult(true);
-    }
-
     public async Task<bool> DeletePhotoAsync(string publicId)
     {
         if (string.IsNullOrEmpty(publicId))
@@ -136,17 +127,14 @@ public class CloudinaryPhotoRepository : IPhotoRepository
 
         try
         {
-            // Create a new transformation object if specified
             Transformation transformationObj = null;
             if (!string.IsNullOrEmpty(transformation))
             {
                 transformationObj = new Transformation().RawTransformation(transformation);
             }
             
-            // Get the URL builder from Cloudinary
             var urlBuilder = _cloudinary.Api.UrlImgUp;
             
-            // Build the URL with transformation if it exists
             string url;
             if (transformationObj != null)
             {
@@ -185,8 +173,7 @@ public class CloudinaryPhotoRepository : IPhotoRepository
             {
                 throw new Exception($"Failed to retrieve images: {result.Error.Message}");
             }
-        
-            // Convert to the expected return type and limit the number of results
+            
             return result.Resources
                 .Take(maxResults)
                 .Select(resource => new PhotoUploadResult

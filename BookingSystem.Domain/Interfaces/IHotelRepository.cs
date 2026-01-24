@@ -11,7 +11,8 @@ namespace BookingSystem.Domain.Interfaces
             int pageNumber = 1,
             int pageSize = 10,
             bool includeRoomTypes = false,
-            bool includePhotos = false);
+            bool includePhotos = false,
+            bool includeAmenities = false);
             
         Task<IEnumerable<Hotel>> GetHotelsWithDetailsAsync(
             Expression<Func<Hotel, bool>> filter = null, 
