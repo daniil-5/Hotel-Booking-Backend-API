@@ -1,5 +1,4 @@
 using BookingSystem.Domain.Enums;
-using System.ComponentModel.DataAnnotations;
 namespace BookingSystem.Application.DTOs.User;
 
 public class CreateUserDto

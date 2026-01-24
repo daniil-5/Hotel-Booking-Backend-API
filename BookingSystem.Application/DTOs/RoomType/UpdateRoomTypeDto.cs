@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace BookingSystem.Application.RoomType;
+namespace BookingSystem.Application.DTOs.RoomType;
 
 public class UpdateRoomTypeDto
 {
@@ -22,6 +22,8 @@ public class UpdateRoomTypeDto
     public decimal Area { get; set; }
         
     public int? Floor { get; set; }
+    
+    public int Count { get; set; }
         
     [Required(ErrorMessage = "Hotel ID is required")]
     public int HotelId { get; set; }

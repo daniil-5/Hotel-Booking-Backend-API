@@ -1,5 +1,3 @@
-using System.Numerics;
-
 namespace BookingSystem.Domain.Entities;
 
 public class RoomType : BaseEntity
@@ -10,9 +8,11 @@ public class RoomType : BaseEntity
     public int Capacity { get; set; } = 2; 
     public decimal Area { get; set; }
     public int? Floor { get; set; }
+    public int Count { get; set; }
+    
+    public int BedCount { get; set; }
     public int HotelId { get; set; }
     public Hotel Hotel { get; set; }
-    public ICollection<Room> Rooms { get; set; } = new List<Room>();
     public ICollection<RoomPricing> Pricing { get; set; } = new List<RoomPricing>();
     public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
 }

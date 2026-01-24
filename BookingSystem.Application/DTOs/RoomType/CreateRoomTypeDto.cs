@@ -1,4 +1,4 @@
-namespace BookingSystem.Application.RoomType;
+namespace BookingSystem.Application.DTOs.RoomType;
 
 public class CreateRoomTypeDto
 {
@@ -8,5 +8,6 @@ public class CreateRoomTypeDto
     public int Capacity { get; set; }
     public decimal BasePrice { get; set; }
     public int? Floor { get; set; }
+    public int Count { get; set; }
     public int HotelId { get; set; }
 }

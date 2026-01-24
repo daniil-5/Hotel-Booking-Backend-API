@@ -1,4 +1,4 @@
-namespace BookingSystem.Application.DTOs;
+namespace BookingSystem.Application.DTOs.User;
 
 public class LoginDto
 {
