@@ -254,17 +254,34 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 #endregion
 
+var app = builder.Build();
+
 #region Database Migration at Startup
 
-using (var scope = builder.Services.BuildServiceProvider().CreateScope())
+using (var scope = app.Services.CreateScope())
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    dbContext.Database.Migrate();
+    var services = scope.ServiceProvider;
+    try
+    {
+        var dbContext = services.GetRequiredService<AppDbContext>();
+        
+        dbContext.Database.Migrate();
+        
+        if (app.Environment.IsDevelopment())
+        {
+            var seeder = services.GetRequiredService<DatabaseSeeder>();
+            await seeder.SeedAsync();
+            Console.WriteLine("Database seeded successfully.");
+        }
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while migrating or seeding the database.");
+    }
 }
 
 #endregion
-
-var app = builder.Build();
 
 #region Development Tools and Database Seeding
 
