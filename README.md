@@ -1,17 +1,19 @@
 # 🏨 Hotel Booking System - REST API
 
-![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet&logoColor=white)
-![ASP.NET Core](https://img.shields.io/badge/ASP.NET_Core-8.0-512BD4?logo=dotnet&logoColor=white)
-![Entity Framework](https://img.shields.io/badge/Entity_Framework-8.0.0-512BD4?logo=dotnet&logoColor=white)
+![.NET](https://img.shields.io/badge/.NET-9.0-512BD4?logo=dotnet&logoColor=white)
+![ASP.NET Core](https://img.shields.io/badge/ASP.NET_Core-9.0-512BD4?logo=dotnet&logoColor=white)
+![Entity Framework](https://img.shields.io/badge/Entity_Framework-9.0.0-512BD4?logo=dotnet&logoColor=white)
 ![JWT](https://img.shields.io/badge/JWT-000000?logo=JSON-web-tokens&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?logo=postgresql&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-DC382D?logo=redis&logoColor=white)
+![Kafka](https://img.shields.io/badge/Apache_Kafka-231F20?logo=apachekafka&logoColor=white)
 ![Cloudinary](https://img.shields.io/badge/Cloudinary-3448C5?logo=cloudinary&logoColor=white)
 ![Swagger](https://img.shields.io/badge/Swagger-85EA2D?logo=swagger&logoColor=white)
+![Postman](https://img.shields.io/badge/Postman-FF6C37?logo=postman&logoColor=white)
 
-Welcome to the Hotel Booking System - a comprehensive REST API solution for managing hotel reservations, room management, and guest services! 🌍
+Welcome to the Hotel Booking System - a comprehensive REST API solution for managing hotel reservations, room type management, and guest services! 🌍
 
-This robust system is built with ASP.NET Core 8, following Clean Architecture principles and implementing CQRS patterns with Redis caching for optimal performance and scalability.
+This robust system is built with ASP.NET Core 9, following Clean Architecture principles and implementing CQRS patterns with Redis caching and Kafka messaging for optimal performance and scalability.
 
 ## ✨ Features
 
@@ -29,7 +31,7 @@ This robust system is built with ASP.NET Core 8, following Clean Architecture pr
 - Location-based services
 - Rating and amenities management
 
-### 🛏️ Room & Room Type Management
+### 🛏️ Room Type Management
 - Room type categorization and management
 - Dynamic room pricing system
 - Room availability tracking
@@ -84,9 +86,13 @@ This system follows **Clean Architecture** principles with the following layers:
 ## 🛠️ Technology Stack
 
 ### Backend Framework
-- **ASP.NET Core 8.0**: High-performance, cross-platform web API framework
-- **Entity Framework Core 8.0.0**: Modern ORM for database operations
+- **ASP.NET Core 9.0**: High-performance, cross-platform web API framework
+- **Entity Framework Core 9.0.0**: Modern ORM for database operations
 - **PostgreSQL**: Reliable and scalable database management
+
+### Messaging & Events
+- **Apache Kafka**: High-throughput distributed streaming platform
+- **Confluent.Kafka**: .NET client for Apache Kafka
 
 ### Caching & Performance
 - **Redis**: Distributed caching with StackExchange.Redis
@@ -108,6 +114,7 @@ This system follows **Clean Architecture** principles with the following layers:
 
 ### Documentation & Testing
 - **Swashbuckle.AspNetCore 6.6.2**: Interactive API documentation
+- **Postman**: API testing and collection management [link](https://www.postman.com/daniil-1257903/workspace/booking-api/collection/43932839-ad8c2ffd-604d-4799-a371-6644d3156661?action=share&creator=43932839)
 - **xUnit 2.9.3**: Unit testing framework
 - **Moq 4.20.72**: Mocking framework for testing
 
@@ -216,14 +223,14 @@ The API will be available at:
 
 ### Room Types
 
-| Method | Endpoint | Description | Access |
-|--------|----------|-------------|--------|
-| GET | `/api/room-types` | Get all room types | Public |
-| GET | `/api/room-types/{id}` | Get room type by ID | Public |
-| GET | `/api/room-types/by-hotel/{hotelId}` | Get room types by hotel | Public |
-| POST | `/api/room-types` | Create room type | Manager, Admin |
-| PUT | `/api/room-types/{id}` | Update room type | Manager, Admin |
-| DELETE | `/api/room-types/{id}` | Delete room type | Manager, Admin |
+| Method | Endpoint                             | Description | Access |
+|--------|--------------------------------------|-------------|--------|
+| GET | `/api/room_types`                    | Get all room types | Public |
+| GET | `/api/room_types/{id}`               | Get room type by ID | Public |
+| GET | `/api/room_types/by_hotel/{hotelId}` | Get room types by hotel | Public |
+| POST | `/api/room_types`                    | Create room type | Manager, Admin |
+| PUT | `/api/room_types/{id}`               | Update room type | Manager, Admin |
+| DELETE | `/api/room-types/{id}`               | Delete room type | Manager, Admin |
 
 ### Booking Management
 
@@ -238,56 +245,53 @@ The API will be available at:
 
 ### User Management
 
-| Method | Endpoint | Description | Access |
-|--------|----------|-------------|--------|
-| GET | `/api/users` | Get all users | Manager, Admin |
-| GET | `/api/users/{id}` | Get user by ID | Authenticated (own) or Manager/Admin |
-| POST | `/api/users` | Create new user | Admin |
-| PUT | `/api/users/{id}` | Update user | Authenticated (own) or Admin |
-| DELETE | `/api/users/{id}` | Delete user | Admin |
-| GET | `/api/users/profile` | Get current user profile | Authenticated |
-| POST | `/api/users/change-password` | Change password | Authenticated |
-| GET | `/api/users/by-email/{email}` | Get user by email | Manager, Admin |
-| GET | `/api/users/by-username/{username}` | Get user by username | Manager, Admin |
+| Method | Endpoint                            | Description | Access |
+|--------|-------------------------------------|-------------|--------|
+| GET | `/api/users`                        | Get all users | Manager, Admin |
+| GET | `/api/users/{id}`                   | Get user by ID | Authenticated (own) or Manager/Admin |
+| POST | `/api/users`                        | Create new user | Admin |
+| PUT | `/api/users/{id}`                   | Update user | Authenticated (own) or Admin |
+| DELETE | `/api/users/{id}`                   | Delete user | Admin |
+| GET | `/api/users/profile`                | Get current user profile | Authenticated |
+| POST | `/api/users/change_password`        | Change password | Authenticated |
+| GET | `/api/users/by_email/{email}`       | Get user by email | Manager, Admin |
+| GET | `/api/users/by_username/{username}` | Get user by username | Manager, Admin |
 
 ### Hotel Photos
 
-| Method | Endpoint | Description | Access |
-|--------|----------|-------------|--------|
-| GET | `/api/hotelphotos` | Get all photos | Authenticated |
-| GET | `/api/hotelphotos/{id}` | Get photo by ID | Public |
-| GET | `/api/hotelphotos/hotel/{hotelId}` | Get photos by hotel | Public |
-| POST | `/api/hotelphotos/upload` | Upload single photo | Public |
-| POST | `/api/hotelphotos/upload/multiple` | Upload multiple photos | Public |
-| PUT | `/api/hotelphotos/{id}` | Update photo metadata | Public |
-| DELETE | `/api/hotelphotos/{id}` | Delete photo | Public |
-| PUT | `/api/hotelphotos/{id}/set-main` | Set main photo | Public |
-| GET | `/api/hotelphotos/{id}/transform` | Get transformed image URL | Public |
-| POST | `/api/hotelphotos/sync/{hotelId}` | Sync Cloudinary photos | Authenticated |
+| Method | Endpoint                            | Description | Access |
+|--------|-------------------------------------|-------------|--------|
+| GET | `/api/hotel_photos`                 | Get all photos | Authenticated |
+| GET | `/api/hotel_photos/{id}`            | Get photo by ID | Public |
+| GET | `/api/hotel_photos/hotel/{hotelId}` | Get photos by hotel | Public |
+| POST | `/api/hotel_photos/upload`          | Upload single photo | Public |
+| POST | `/api/hotel_photos/upload/multiple` | Upload multiple photos | Public |
+| PUT | `/api/hotel_photos/{id}`            | Update photo metadata | Public |
+| DELETE | `/api/hotel_photos/{id}`            | Delete photo | Public |
+| PUT | `/api/hotel_photos/{id}/set_main`   | Set main photo | Public |
+| GET | `/api/hotel_photos/{id}/transform`  | Get transformed image URL | Public |
+| POST | `/api/hotel_photos/sync/{hotelId}`  | Sync Cloudinary photos | Authenticated |
 
 ### Room Pricing
 
-| Method | Endpoint | Description | Access |
-|--------|----------|-------------|--------|
-| GET | `/api/roompricings` | Get all room pricing | Public |
-| GET | `/api/roompricings/{id}` | Get room pricing by ID | Public |
-| POST | `/api/roompricings` | Create room pricing | Manager, Admin |
-| PUT | `/api/roompricings/{id}` | Update room pricing | Manager, Admin |
-| DELETE | `/api/roompricings/{id}` | Delete room pricing | Manager, Admin |
+| Method | Endpoint                  | Description | Access |
+|--------|---------------------------|-------------|--------|
+| GET | `/api/room_pricings`      | Get all room pricing | Public |
+| GET | `/api/room_pricings/{id}` | Get room pricing by ID | Public |
+| POST | `/api/room_pricings`      | Create room pricing | Manager, Admin |
+| PUT | `/api/room_pricings/{id}` | Update room pricing | Manager, Admin |
+| DELETE | `/api/roomp_ricings/{id}` | Delete room pricing | Manager, Admin |
 
-## 🔑 Default Accounts
 
-The system comes with default accounts for testing (seeded automatically in development):
+### Amenities
 
-### Administrator Account
-- **Username**: `admin`
-- **Password**: `Admin123!`
-- **Role**: Admin
-
-### Manager Account
-- **Username**: `manager`
-- **Password**: `Manager123!`
-- **Role**: Manager
+| Method | Endpoint                  | Description | Access |
+|--------|---------------------------|---------|--------|
+| GET | `/api/amenities`          | Get all amenities | Public |
+| GET | `/api/amenities/{id}` | Get amenities by ID | Public |
+| POST | `/api/amenities`      | Create amenities | Manager, Admin |
+| PUT | `/api/amenities/{id}` | Update amenities | Manager, Admin |
+| DELETE | `/api/amenities/{id}` | Delete amenities | Manager, Admin |
 
 ## 🧪 Testing
 
@@ -344,6 +348,14 @@ Create an `appsettings.Development.json` file for local development:
     "ApiKey": "your-api-key",
     "ApiSecret": "your-api-secret"
   },
+  "Kafka": {
+    "BootstrapServers": "localhost:9092",
+    "GroupId": "booking-processor-group",
+    "Topics": {
+      "BookingRequests": "booking.requests",
+      "BookingResults": "booking.results"
+    }
+  },
   "Logging": {
     "LogLevel": {
       "Default": "Information",
@@ -373,7 +385,6 @@ The system implements a comprehensive caching strategy using Redis:
 ### Cache Decorators
 - **CachedBookingService**: Caches booking data with automatic invalidation
 - **CachedHotelService**: Caches hotel information and search results
-- **CachedRoomService**: Caches room availability and pricing
 - **CachedUserService**: Caches user profiles and search results
 
 ### Cache Keys Pattern
@@ -392,6 +403,16 @@ rooms:availability:{hotelId}:{date}
 - Pattern-based invalidation (e.g., `bookings:*` when booking changes)
 - Automatic TTL management
 - Event-driven cache clearing
+
+## 📨 Apache Kafka Integration
+
+This project uses **Apache Kafka** for asynchronous booking processing. This ensures high availability and decoupling between the API receipt of a booking request and its actual processing in the database.
+
+### 🏗 Workflow Architecture
+1. **Producer**: When a booking request is made via the API, the system validates the request and publishes a message to a Kafka topic instead of writing directly to the database synchronously.
+2. **Consumer**: A background `HostedService` (`BookingRequestConsumer`) listens to the topic.
+3. **Processing**: The consumer picks up the message, performs necessary business logic, and persists the booking into PostgreSQL.
+
 
 ## 🔐 Security Features
 
