@@ -1,4 +1,6 @@
 using BookingSystem.Application.DTOs.RoomPricing;
+using BookingSystem.Application.Interfaces;
+using BookingSystem.Application.Mappers;
 using BookingSystem.Domain.Entities;
 using BookingSystem.Domain.Interfaces;
 
@@ -23,7 +25,7 @@ public class RoomPricingService : IRoomPricingService
         };
 
         await _roomPricingRepository.AddAsync(roomPricing);
-        return MapToDto(roomPricing);
+        return roomPricing.ToDto();
     }
 
     public async Task<RoomPricingDto> UpdateRoomPricingAsync(UpdateRoomPricingDto pricingDto)
@@ -35,7 +37,7 @@ public class RoomPricingService : IRoomPricingService
         existingPricing.Price = pricingDto.Price;
 
         await _roomPricingRepository.UpdateAsync(existingPricing);
-        return MapToDto(existingPricing);
+        return existingPricing.ToDto();
     }
 
     public async Task DeleteRoomPricingAsync(int id)
@@ -46,25 +48,12 @@ public class RoomPricingService : IRoomPricingService
     public async Task<RoomPricingDto> GetRoomPricingByIdAsync(int id)
     {
         var pricing = await _roomPricingRepository.GetByIdAsync(id);
-        return pricing != null ? MapToDto(pricing) : null;
+        return pricing?.ToDto();
     }
 
     public async Task<IEnumerable<RoomPricingDto>> GetAllRoomPricingsAsync()
     {
         var pricings = await _roomPricingRepository.GetAllAsync();
-        return pricings.Select(MapToDto).ToList();
-    }
-
-    private static RoomPricingDto MapToDto(RoomPricing pricing)
-    {
-        return new RoomPricingDto
-        {
-            Id = pricing.Id,
-            RoomTypeId = pricing.RoomTypeId,
-            Date = pricing.Date,
-            Price = pricing.Price,
-            CreatedAt = pricing.CreatedAt,
-            UpdatedAt = pricing.UpdatedAt
-        };
+        return pricings.Select(p => p.ToDto()).ToList();
     }
 }

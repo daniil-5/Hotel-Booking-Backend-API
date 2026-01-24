@@ -1,5 +1,3 @@
-using BookingSystem.Domain.Enums;
-
 namespace BookingSystem.Application.DTOs.User;
 
 public class UserDto

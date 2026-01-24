@@ -1,10 +1,10 @@
 using System.Linq.Expressions;
 using BookingSystem.Application.DTOs.User;
 using BookingSystem.Application.Interfaces;
-using BookingSystem.Application.Services;
+using BookingSystem.Application.Mappers;
 using BookingSystem.Domain.Entities;
-using BookingSystem.Domain.Enums;
 using BookingSystem.Domain.Interfaces;
+using Serializator.Extensions;
 
 namespace BookingSystem.Application.Services
 {
@@ -19,28 +19,18 @@ namespace BookingSystem.Application.Services
 
         public async Task<UserDto> CreateUserAsync(CreateUserDto userDto)
         {
-            // Check if user with same email or username already exists
             var existingEmail = await _userRepository.GetByEmailAsync(userDto.Email);
             if (existingEmail != null)
                 throw new ApplicationException("Email is already in use");
 
-            var existingUsername = await _userRepository.GetByEmailAsync(userDto.Username);
+            var existingUsername = await _userRepository.FindAsync(u => u.Username == userDto.Username); 
             if (existingUsername != null)
                 throw new ApplicationException("Username is already in use");
 
-            var user = new User
-            {
-                Username = userDto.Username,
-                Email = userDto.Email,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(userDto.Password),
-                FirstName = userDto.FirstName,
-                LastName = userDto.LastName,
-                PhoneNumber = userDto.PhoneNumber,
-                Role = (int)UserRole.Guest
-            };
+            var user = userDto.ToEntity();
 
             await _userRepository.AddAsync(user);
-            return MapToDto(user);
+            return user.ToDto();
         }
 
         public async Task<UserDto> UpdateUserAsync(UpdateUserDto userDto)
@@ -48,8 +38,7 @@ namespace BookingSystem.Application.Services
             var existingUser = await _userRepository.GetByIdAsync(userDto.Id);
             if (existingUser == null)
                 throw new ApplicationException($"User with ID {userDto.Id} not found");
-
-            // Check if the updated email or username is already in use by another user
+            
             if (userDto.Email != existingUser.Email)
             {
                 var existingEmail = await _userRepository.GetByEmailAsync(userDto.Email);
@@ -73,7 +62,7 @@ namespace BookingSystem.Application.Services
             existingUser.UpdatedAt = DateTime.UtcNow;
 
             await _userRepository.UpdateAsync(existingUser);
-            return MapToDto(existingUser);
+            return existingUser.ToDto();
         }
 
         public async Task DeleteUserAsync(int id)
@@ -88,33 +77,31 @@ namespace BookingSystem.Application.Services
         public async Task<UserDto> GetUserByIdAsync(int id)
         {
             var user = await _userRepository.GetByIdAsync(id);
-            return MapToDto(user);
+            return user.ToDto();
         }
 
         public async Task<UserDto> GetUserByEmailAsync(string email)
         {
             var user = await _userRepository.GetByEmailAsync(email);
-            return MapToDto(user);
+            return user.ToDto();
         }
 
         public async Task<UserDto> GetUserByUsernameAsync(string username)
         {
             var user = await _userRepository.GetByEmailAsync(username);
-            return MapToDto(user);
+            return user.ToDto();
         }
 
         public async Task<IEnumerable<UserDto>> GetAllUsersAsync()
         {
             var users = await _userRepository.GetAllAsync();
-            return users.Select(MapToDto).ToList();
+            return users.Select(u => u.ToDto()).ToList();
         }
 
         public async Task<UserSearchResultDto> SearchUsersAsync(UserSearchDto searchDto)
         {
-            // Create the filter expression
             Expression<Func<User, bool>> filter = user => true;
-
-            // Apply search term filter to username, email, first name, or last name
+            
             if (!string.IsNullOrEmpty(searchDto.SearchTerm))
             {
                 var term = searchDto.SearchTerm.ToLower();
@@ -124,14 +111,12 @@ namespace BookingSystem.Application.Services
                     u.FirstName.ToLower().Contains(term) || 
                     u.LastName.ToLower().Contains(term));
             }
-
-            // Apply role filter
+            
             if (searchDto.Role.HasValue)
             {
                 filter = filter.And(u => u.Role == (int)searchDto.Role.Value);
             }
-
-            // Create the ordering expression
+            
             Func<IQueryable<User>, IOrderedQueryable<User>> orderBy = null;
             switch (searchDto.SortBy.ToLower())
             {
@@ -167,21 +152,19 @@ namespace BookingSystem.Application.Services
                     break;
             }
 
-            // Execute the search
             var (users, totalCount) = await _userRepository.SearchUsersAsync(
                 filter,
                 orderBy,
                 searchDto.PageNumber,
                 searchDto.PageSize
             );
-
-            // Calculate pagination values
+            
             var totalPages = (int)Math.Ceiling(totalCount / (double)searchDto.PageSize);
             var hasPrevious = searchDto.PageNumber > 1;
             var hasNext = searchDto.PageNumber < totalPages;
 
-            
-            var userDtos = users.Select(MapToDto).ToList();
+
+            var userDtos = users.Select(u => u.ToDto()).ToList();
             
             return new UserSearchResultDto
             {
@@ -220,22 +203,6 @@ namespace BookingSystem.Application.Services
             if (user == null) return false;
     
             return BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);
-        }
-        
-        private static UserDto MapToDto(User user)
-        {
-            return new UserDto
-            {
-                Id = user.Id,
-                Username = user.Username,
-                Email = user.Email,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                PhoneNumber = user.PhoneNumber,
-                Role = ((UserRole)user.Role).ToString(),
-                CreatedAt = user.CreatedAt,
-                UpdatedAt = user.UpdatedAt
-            };
         }
         
     }
