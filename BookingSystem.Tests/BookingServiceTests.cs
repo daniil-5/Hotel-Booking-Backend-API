@@ -1,393 +1,529 @@
-using System.Linq.Expressions;
-using AutoFixture;
-using BookingSystem.Application.Booking;
+using BookingSystem.Application.DTOs.Booking;
+using BookingSystem.Application.DTOs.Commands;
+using BookingSystem.Application.Interfaces;
 using BookingSystem.Application.Services;
+using BookingSystem.Application.Settings;
 using BookingSystem.Domain.Entities;
 using BookingSystem.Domain.Enums;
 using BookingSystem.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore.Query;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
+using System.Linq.Expressions;
 using Xunit;
 
-namespace BookingSystem.Tests;
-
-public class BookingServiceTests
+namespace BookingSystem.Tests.Services
 {
-    private readonly Fixture _fixture;
-    private readonly Mock<IRepository<Booking>> _bookingRepoMock;
-    private readonly Mock<IRepository<RoomType>> _roomTypeRepoMock;
-    private readonly Mock<IHotelRepository> _hotelRepoMock;
-    private readonly Mock<IRepository<RoomPricing>> _pricingRepoMock;
-    private readonly BookingService _service;
-
-    public BookingServiceTests()
+    public class BookingServiceTests
     {
-        _fixture = new Fixture();
-        _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
-            .ForEach(b => _fixture.Behaviors.Remove(b));
-        _fixture.Behaviors.Add(new OmitOnRecursionBehavior(recursionDepth: 2));
-        
-        _bookingRepoMock = new Mock<IRepository<Booking>>();
-        _roomTypeRepoMock = new Mock<IRepository<RoomType>>();
-        _hotelRepoMock = new Mock<IHotelRepository>();
-        _pricingRepoMock = new Mock<IRepository<RoomPricing>>();
-        
-        _service = new BookingService(
-            _bookingRepoMock.Object,
-            _roomTypeRepoMock.Object,
-            _hotelRepoMock.Object,
-            _pricingRepoMock.Object
-        );
-    }
+        private readonly Mock<IRepository<Booking>> _mockBookingRepo;
+        private readonly Mock<IRepository<RoomType>> _mockRoomTypeRepo;
+        private readonly Mock<IUserRepository> _mockUserRepo;
+        private readonly Mock<IHotelRepository> _mockHotelRepo;
+        private readonly Mock<IRepository<RoomPricing>> _mockPricingRepo;
+        private readonly Mock<IKafkaProducer> _mockKafkaProducer;
+        private readonly Mock<ILogger<BookingService>> _mockLogger;
+        private readonly BookingService _service;
 
-    [Fact]
-    public async Task GetBookingByIdAsync_ValidId_ReturnsBooking()
-    {
-        // Arrange
-        var bookingId = 1;
-        var booking = new Booking
+        public BookingServiceTests()
         {
-            Id = bookingId,
-            RoomTypeId = 1,
-            UserId = 1,
-            HotelId = 1,
-            CheckInDate = DateTime.UtcNow.AddDays(1),
-            CheckOutDate = DateTime.UtcNow.AddDays(3),
-            GuestCount = 2,
-            TotalPrice = 300,
-            Status = (int)BookingStatus.Confirmed
-        };
-    
-        booking.Hotel = new Hotel { Id = 1, Name = "Test Hotel" };
-        booking.RoomType = new RoomType { Id = 1, Name = "Standard Room" };
-        booking.User = new User { Id = 1, FirstName = "John", LastName = "Doe" };
+            _mockBookingRepo = new Mock<IRepository<Booking>>();
+            _mockRoomTypeRepo = new Mock<IRepository<RoomType>>();
+            _mockUserRepo = new Mock<IUserRepository>();
+            _mockHotelRepo = new Mock<IHotelRepository>();
+            _mockPricingRepo = new Mock<IRepository<RoomPricing>>();
+            _mockKafkaProducer = new Mock<IKafkaProducer>();
+            _mockLogger = new Mock<ILogger<BookingService>>();
 
-        _bookingRepoMock.Setup(x => x.GetByIdAsync(
-                bookingId,
-                It.IsAny<Func<IQueryable<Booking>, IQueryable<Booking>>>()))
-            .ReturnsAsync(booking);
+            var kafkaSettings = Options.Create(new KafkaSettings 
+            { 
+                Topics = new KafkaTopics { BookingRequests = "bookings-topic" } 
+            });
 
-        // Act
-        var result = await _service.GetBookingByIdAsync(bookingId);
+            _service = new BookingService(
+                _mockBookingRepo.Object,
+                _mockRoomTypeRepo.Object,
+                _mockUserRepo.Object,
+                _mockHotelRepo.Object,
+                _mockPricingRepo.Object,
+                _mockKafkaProducer.Object,
+                kafkaSettings,
+                _mockLogger.Object
+            );
+        }
 
-        // Assert
-        Assert.NotNull(result);
-        Assert.Equal(booking.Id, result.Id);
-        Assert.Equal(booking.RoomTypeId, result.RoomTypeId);
-        Assert.Equal(booking.UserId, result.UserId);
-        Assert.Equal(booking.HotelId, result.HotelId);
-        Assert.Equal(booking.CheckInDate, result.CheckInDate);
-        Assert.Equal(booking.CheckOutDate, result.CheckOutDate);
-        Assert.Equal(booking.GuestCount, result.GuestCount);
-        Assert.Equal(booking.TotalPrice, result.TotalPrice);
-        Assert.Equal(booking.Status, result.Status);
-    
-        _bookingRepoMock.Verify(x => x.GetByIdAsync(
-                bookingId, 
-                It.IsAny<Func<IQueryable<Booking>, IQueryable<Booking>>>()), 
-            Times.Once);
-    }
+        #region CreateBookingAsync Tests
 
-    [Fact]
-    public async Task CreateBookingAsync_ValidInput_CreatesBooking()
-{
-    // Arrange
-    var hotelId = 1;
-    var roomTypeId = 2;
-    var userId = 1;
-    var checkInDate = DateTime.UtcNow.Date.AddDays(1);
-    var checkOutDate = DateTime.UtcNow.Date.AddDays(3);
-    var guestCount = 2;
-    var totalPrice = 200m; // 2 nights * 100m base price
-    
-    var hotel = _fixture.Build<Hotel>()
-        .With(h => h.Id, hotelId)
-        .Create();
-    
-    var roomType = _fixture.Build<RoomType>()
-        .With(rt => rt.Id, roomTypeId)
-        .With(rt => rt.HotelId, hotelId)
-        .With(rt => rt.Capacity, 3)
-        .With(rt => rt.BasePrice, 100m)
-        .Create();
-    
-    var createDto = new CreateBookingDto
-    {
-        HotelId = hotelId,
-        RoomTypeId = roomTypeId,
-        UserId = userId,
-        CheckInDate = checkInDate,
-        CheckOutDate = checkOutDate,
-        GuestCount = guestCount
-    };
-    
-    // Setup repository mocks
-    _hotelRepoMock.Setup(x => x.GetByIdAsync(hotelId))
-        .ReturnsAsync(hotel);
-    
-    _roomTypeRepoMock.Setup(x => x.GetByIdAsync(roomTypeId))
-        .ReturnsAsync(roomType);
-    
-    // Mock the room count
-    _roomTypeRepoMock.Setup(x => x.CountAsync(
-            It.IsAny<Expression<Func<RoomType, bool>>>(), 
-            It.IsAny<Func<IQueryable<RoomType>, IIncludableQueryable<RoomType, object>>>()))
-        .ReturnsAsync(1);
-    
-    // Mock no overlapping bookings
-    var emptyBookingsQueryable = new List<Booking>().AsQueryable();
-    _bookingRepoMock.Setup(x => x.GetQueryable())
-        .Returns(emptyBookingsQueryable);
-    
-    // Capture the booking that gets added
-    Booking capturedBooking = null;
-    _bookingRepoMock.Setup(x => x.AddAsync(It.IsAny<Booking>()))
-        .Callback<Booking>(b => capturedBooking = b)
-        .Returns(Task.CompletedTask);
-    
-    // Mock no specific pricing records (so base price will be used)
-    _pricingRepoMock.Setup(x => x.GetAllAsync(
-            It.IsAny<Expression<Func<RoomPricing, bool>>>()))
-        .ReturnsAsync(new List<RoomPricing>());
-
-    // Assert
-    Assert.True(true);
-}
-
-    [Fact]
-    public async Task CreateBookingAsync_InvalidDates_ThrowsArgumentException()
-    {
-        // Arrange
-        var createDto = new CreateBookingDto
+        [Fact]
+        public async Task CreateBookingAsync_ShouldThrow_DatesInvalid()
         {
-            HotelId = 1,
-            RoomTypeId = 2,
-            UserId = 1,
-            CheckInDate = DateTime.UtcNow.Date.AddDays(3),
-            CheckOutDate = DateTime.UtcNow.Date.AddDays(1), // Check-out before check-in
-            GuestCount = 2
-        };
+            // Arrange
+            var dto = new CreateBookingDto 
+            { 
+                CheckInDate = DateTime.Now.AddDays(2), 
+                CheckOutDate = DateTime.Now.AddDays(1) 
+            };
 
-        // Act & Assert
-        await Assert.ThrowsAsync<ArgumentException>(() => 
-            _service.CreateBookingAsync(createDto));
-        
-        _bookingRepoMock.Verify(x => x.AddAsync(It.IsAny<Booking>()), Times.Never);
-    }
+            // Act & Assert
+            var ex = await Assert.ThrowsAsync<ArgumentException>(() => _service.CreateBookingAsync(dto));
+            Assert.Equal("Check-out date must be after check-in date", ex.Message);
+        }
 
-    [Fact]
-    public async Task CreateBookingAsync_HotelNotFound_ThrowsKeyNotFoundException()
-    {
-        // Arrange
-        var createDto = new CreateBookingDto
+        [Fact]
+        public async Task CreateBookingAsync_ShouldSendKafkaMessage()
         {
-            HotelId = 999, // Non-existent hotel ID
-            RoomTypeId = 2,
-            UserId = 1,
-            CheckInDate = DateTime.UtcNow.Date.AddDays(1),
-            CheckOutDate = DateTime.UtcNow.Date.AddDays(3),
-            GuestCount = 2
-        };
-        
-        _hotelRepoMock.Setup(x => x.GetByIdAsync(999))
-            .ReturnsAsync((Hotel)null);
+            // Arrange
+            var dto = new CreateBookingDto
+            {
+                UserId = 1,
+                HotelId = 1,
+                RoomTypeId = 10,
+                CheckInDate = DateTime.UtcNow.AddDays(1),
+                CheckOutDate = DateTime.UtcNow.AddDays(5),
+                GuestCount = 2
+            };
 
-        // Act & Assert
-        await Assert.ThrowsAsync<KeyNotFoundException>(() => 
-            _service.CreateBookingAsync(createDto));
+            // Act
+            var result = await _service.CreateBookingAsync(dto);
+
+            // Assert
+            Assert.NotEqual(Guid.Empty, result);
+            _mockKafkaProducer.Verify(k => k.SendMessageAsync(
+                "bookings-topic",
+                "10",
+                It.Is<CreateBookingCommand>(c => c.UserId == 1 && c.HotelId == 1)
+            ), Times.Once);
+        }
+
+        #endregion
+
+        #region GetBookingByIdAsync Tests
+
+        [Fact]
+        public async Task GetBookingByIdAsync_ShouldReturnDto()
+        {
+            // Arrange
+            var booking = new Booking { Id = 1, TrackingId = Guid.NewGuid() };
             
-        _bookingRepoMock.Verify(x => x.AddAsync(It.IsAny<Booking>()), Times.Never);
-    }
+            _mockBookingRepo.Setup(r => r.GetByIdAsync(
+                1, 
+                It.IsAny<Func<IQueryable<Booking>, IQueryable<Booking>>>()
+            )).ReturnsAsync(booking);
 
-    [Fact]
-    public async Task CreateBookingAsync_TooManyGuests_ThrowsInvalidOperationException()
-    {
-        // Arrange
-        var hotelId = 1;
-        var roomTypeId = 2;
-        
-        var hotel = _fixture.Build<Hotel>()
-            .With(h => h.Id, hotelId)
-            .Create();
-        
-        var roomType = _fixture.Build<RoomType>()
-            .With(rt => rt.Id, roomTypeId)
-            .With(rt => rt.HotelId, hotelId)
-            .With(rt => rt.Capacity, 2) // Room capacity is 2
-            .Create();
-        
-        var createDto = new CreateBookingDto
+            // Act
+            var result = await _service.GetBookingByIdAsync(1);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(booking.Id, result.Id);
+        }
+
+        [Fact]
+        public async Task GetBookingByIdAsync_ShouldReturnNull_NotFound()
         {
-            HotelId = hotelId,
-            RoomTypeId = roomTypeId,
-            UserId = 1,
-            CheckInDate = DateTime.UtcNow.Date.AddDays(1),
-            CheckOutDate = DateTime.UtcNow.Date.AddDays(3),
-            GuestCount = 3 // More guests than capacity
-        };
-        
-        _hotelRepoMock.Setup(x => x.GetByIdAsync(hotelId))
-            .ReturnsAsync(hotel);
-        
-        _roomTypeRepoMock.Setup(x => x.GetByIdAsync(roomTypeId))
-            .ReturnsAsync(roomType);
+            // Arrange
+            _mockBookingRepo.Setup(r => r.GetByIdAsync(
+                1, 
+                It.IsAny<Func<IQueryable<Booking>, IQueryable<Booking>>>()
+            )).ReturnsAsync((Booking)null);
 
-        // Act & Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(() => 
-            _service.CreateBookingAsync(createDto));
+            // Act
+            var result = await _service.GetBookingByIdAsync(1);
+
+            // Assert
+            Assert.Null(result);
+        }
+
+        #endregion
+
+        #region GetBookingByTrackingIdAsync Tests
+
+        [Fact]
+        public async Task GetBookingByTrackingIdAsync_ShouldReturnDto()
+        {
+            // Arrange
+            var guid = Guid.NewGuid();
+            var booking = new Booking { Id = 1, TrackingId = guid };
             
-        _bookingRepoMock.Verify(x => x.AddAsync(It.IsAny<Booking>()), Times.Never);
-    }
+            _mockBookingRepo.Setup(r => r.FindAsync(It.IsAny<Expression<Func<Booking, bool>>>()))
+                .ReturnsAsync(booking);
 
-    [Fact]
-    public async Task CancelBookingAsync_ValidId_CancelsBooking()
-    {
-        // Arrange
-        var booking = _fixture.Create<Booking>();
-        
-        _bookingRepoMock.Setup(x => x.GetByIdAsync(booking.Id))
-            .ReturnsAsync(booking);
+            // Act
+            var result = await _service.GetBookingByTrackingIdAsync(guid);
 
-        // Act
-        var result = await _service.CancelBookingAsync(booking.Id);
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(guid, result.TrackingId);
+        }
 
-        // Assert
-        Assert.NotNull(result);
-        Assert.Equal((int)BookingStatus.Cancelled, result.Status);
-        _bookingRepoMock.Verify(x => x.UpdateAsync(It.Is<Booking>(b => 
-            b.Id == booking.Id && b.Status == (int)BookingStatus.Cancelled)), Times.Once);
-    }
+        #endregion
 
-    [Fact]
-    public async Task UpdateBookingStatusAsync_ValidInput_UpdatesStatus()
-    {
-        // Arrange
-        var booking = _fixture.Create<Booking>();
-        var newStatus = (int)BookingStatus.Confirmed;
-        
-        _bookingRepoMock.Setup(x => x.GetByIdAsync(booking.Id))
-            .ReturnsAsync(booking);
+        #region UpdateBookingAsync Tests
 
-        // Act
-        var result = await _service.UpdateBookingStatusAsync(booking.Id, newStatus);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.Equal(newStatus, result.Status);
-        _bookingRepoMock.Verify(x => x.UpdateAsync(It.Is<Booking>(b => 
-            b.Id == booking.Id && b.Status == newStatus)), Times.Once);
-    }
-
-    [Fact]
-    public async Task GetBookingsByUserIdAsync_ValidUserId_ReturnsUserBookings()
-    {
-        // Arrange
-        var userId = 1;
-        var bookings = _fixture.CreateMany<Booking>(3).ToList();
-        foreach (var booking in bookings)
+        [Fact]
+        public async Task UpdateBookingAsync_ShouldThrow_BookingNotFound()
         {
-            booking.UserId = userId;
-            booking.Hotel = _fixture.Create<Hotel>();
-            booking.RoomType = _fixture.Create<RoomType>();
-            booking.User = _fixture.Create<User>();
+            // Arrange
+            _mockBookingRepo.Setup(r => r.GetByIdAsync(1)).ReturnsAsync((Booking)null);
+
+            // Act & Assert
+            await Assert.ThrowsAsync<KeyNotFoundException>(() => 
+                _service.UpdateBookingAsync(new UpdateBookingDto { Id = 1 }));
+        }
+
+        [Fact]
+        public async Task UpdateBookingAsync_ShouldThrow_DatesInvalid()
+        {
+            // Arrange
+            var booking = new Booking { Id = 1, CheckInDate = DateTime.Now, CheckOutDate = DateTime.Now.AddDays(1) };
+            _mockBookingRepo.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(booking);
+
+            var dto = new UpdateBookingDto 
+            { 
+                Id = 1, 
+                CheckInDate = DateTime.Now.AddDays(2), 
+                CheckOutDate = DateTime.Now.AddDays(1)
+            };
+
+            // Act & Assert
+            var ex = await Assert.ThrowsAsync<ArgumentException>(() => _service.UpdateBookingAsync(dto));
+            Assert.Equal("Check-out date must be after check-in date", ex.Message);
+        }
+
+        [Fact]
+        public async Task UpdateBookingAsync_ShouldThrow_GuestCountExceedsCapacity()
+        {
+            // Arrange
+            var booking = new Booking { Id = 1, RoomTypeId = 10, GuestCount = 1 };
+            _mockBookingRepo.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(booking);
+
+            var roomType = new RoomType { Id = 10, Capacity = 2 };
+            _mockRoomTypeRepo.Setup(r => r.GetByIdAsync(10)).ReturnsAsync(roomType);
+
+            var dto = new UpdateBookingDto 
+            { 
+                Id = 1, 
+                CheckInDate = booking.CheckInDate, 
+                CheckOutDate = booking.CheckOutDate,
+                GuestCount = 5 
+            };
+
+            // Act & Assert
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => _service.UpdateBookingAsync(dto));
+            Assert.Contains("can only accommodate 2 guests", ex.Message);
+        }
+
+        [Fact]
+        public async Task UpdateBookingAsync_Should_RoomUnavailable()
+        {
+            // Arrange
+            var booking = new Booking { Id = 1, RoomTypeId = 10, HotelId = 1 };
+            _mockBookingRepo.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(booking);
+            
+            var roomType = new RoomType { Id = 10, HotelId = 1, Count = 1 };
+            _mockRoomTypeRepo.Setup(r => r.GetByIdAsync(10)).ReturnsAsync(roomType);
+            
+            var overlappingBookings = new List<Booking>
+            {
+                new Booking { Id = 2, RoomTypeId = 10, CheckInDate = DateTime.Today, CheckOutDate = DateTime.Today.AddDays(5) }
+            }.AsQueryable();
+
+            var mockSet = MockAsyncQueryable(overlappingBookings);
+            _mockBookingRepo.Setup(r => r.GetQueryable()).Returns(mockSet.Object);
+
+            var dto = new UpdateBookingDto 
+            { 
+                Id = 1, 
+                CheckInDate = DateTime.Today.AddDays(1),
+                CheckOutDate = DateTime.Today.AddDays(3) 
+            };
+
+            // Act & Assert
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => _service.UpdateBookingAsync(dto));
+            Assert.Contains("not available", ex.Message);
+        }
+
+        [Fact]
+        public async Task UpdateBookingAsync_ShouldRecalculatePrice_WhenDatesChange()
+        {
+            // Arrange
+            var booking = new Booking 
+            { 
+                Id = 1, RoomTypeId = 10, HotelId = 1, 
+                CheckInDate = DateTime.Today, CheckOutDate = DateTime.Today.AddDays(1),
+                TotalPrice = 100
+            };
+            _mockBookingRepo.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(booking);
+            
+            var roomType = new RoomType { Id = 10, HotelId = 1, Count = 10, BasePrice = 200 };
+            _mockRoomTypeRepo.Setup(r => r.GetByIdAsync(10)).ReturnsAsync(roomType);
+            
+            var mockSet = MockAsyncQueryable(new List<Booking>().AsQueryable());
+            _mockBookingRepo.Setup(r => r.GetQueryable()).Returns(mockSet.Object);
+            
+            _mockPricingRepo.Setup(r => r.GetAllAsync(It.IsAny<Expression<Func<RoomPricing, bool>>>(), null))
+                .ReturnsAsync(new List<RoomPricing>());
+
+            var dto = new UpdateBookingDto 
+            { 
+                Id = 1, 
+                CheckInDate = DateTime.Today.AddDays(10), 
+                CheckOutDate = DateTime.Today.AddDays(12),
+                GuestCount = 1
+            };
+
+            // Act
+            var result = await _service.UpdateBookingAsync(dto);
+
+            // Assert
+            Assert.Equal(400, booking.TotalPrice);
+            _mockBookingRepo.Verify(r => r.UpdateAsync(booking), Times.Once);
+        }
+
+        #endregion
+
+        #region CheckRoomTypeAvailabilityAsync Tests
+
+        [Fact]
+        public async Task CheckRoomTypeAvailabilityAsync_ShouldThrow_WhenRoomTypeMismatch()
+        {
+            // Arrange
+            _mockRoomTypeRepo.Setup(r => r.GetByIdAsync(1))
+                .ReturnsAsync(new RoomType { Id = 1, HotelId = 2 });
+
+            // Act & Assert
+            await Assert.ThrowsAsync<KeyNotFoundException>(() => 
+                _service.CheckRoomTypeAvailabilityAsync(1, 1, DateTime.Now, DateTime.Now.AddDays(1)));
+        }
+
+        [Fact]
+        public async Task CheckRoomTypeAvailabilityAsync_ShouldReturnFalse_NoRooms()
+        {
+            // Arrange
+            _mockRoomTypeRepo.Setup(r => r.GetByIdAsync(1))
+                .ReturnsAsync(new RoomType { Id = 1, HotelId = 1, Count = 0 });
+
+            // Act
+            var result = await _service.CheckRoomTypeAvailabilityAsync(1, 1, DateTime.Now, DateTime.Now.AddDays(1));
+
+            // Assert
+            Assert.False(result);
+        }
+
+        #endregion
+
+        #region Other Method Tests
+
+        [Fact]
+        public async Task DeleteBookingAsync_ShouldDelete()
+        {
+            // Arrange
+            _mockBookingRepo.Setup(r => r.GetByIdAsync(1))
+                .ReturnsAsync(new Booking { Id = 1 });
+
+            // Act
+            await _service.DeleteBookingAsync(1);
+
+            // Assert
+            _mockBookingRepo.Verify(r => r.DeleteAsync(1), Times.Once);
+        }
+
+        [Fact]
+        public async Task CancelBookingAsync_ShouldUpdateStatus()
+        {
+            // Arrange
+            var booking = new Booking { Id = 1, Status = (int)BookingStatus.Confirmed };
+            _mockBookingRepo.Setup(r => r.GetByIdAsync(1))
+                .ReturnsAsync(booking);
+
+            // Act
+            await _service.CancelBookingAsync(1);
+
+            // Assert
+            Assert.Equal((int)BookingStatus.Cancelled, booking.Status);
+            _mockBookingRepo.Verify(r => r.UpdateAsync(booking), Times.Once);
+        }
+
+        [Fact]
+        public async Task UpdateBookingStatusAsync_ShouldThrow_StatusInvalid()
+        {
+            // Act & Assert
+            await Assert.ThrowsAsync<ArgumentException>(() => 
+                _service.UpdateBookingStatusAsync(1, 999));
+        }
+
+        [Fact]
+        public async Task UpdateBookingStatusAsync_ShouldUpdate()
+        {
+            // Arrange
+            var booking = new Booking { Id = 1 };
+            _mockBookingRepo.Setup(r => r.GetByIdAsync(1))
+                .ReturnsAsync(booking);
+
+            // Act
+            await _service.UpdateBookingStatusAsync(1, (int)BookingStatus.Pending);
+
+            // Assert
+            Assert.Equal((int)BookingStatus.Pending, booking.Status);
+        }
+
+        [Fact]
+        public async Task GetAllBookingsAsync_ShouldReturnList()
+        {
+            // Arrange
+            _mockBookingRepo.Setup(r => r.GetAllAsync(null, It.IsAny<Func<IQueryable<Booking>, IQueryable<Booking>>>()))
+                .ReturnsAsync(new List<Booking>());
+            
+            // Act
+            await _service.GetAllBookingsAsync();
+            
+            // Assert
+            _mockBookingRepo.Verify(r => r.GetAllAsync(null, It.IsAny<Func<IQueryable<Booking>, IQueryable<Booking>>>()), Times.Once);
         }
         
-        _bookingRepoMock.Setup(x => x.GetAllAsync(
-                It.IsAny<System.Linq.Expressions.Expression<Func<Booking, bool>>>(),
-                It.IsAny<Func<IQueryable<Booking>, IIncludableQueryable<Booking, object>>>()))
-            .ReturnsAsync(bookings);
+        [Fact]
+        public async Task GetBookingsByDateRangeAsync_ShouldReturnList()
+        {
+            // Arrange
+            _mockBookingRepo.Setup(r => r.GetAllAsync(It.IsAny<Expression<Func<Booking, bool>>>(), It.IsAny<Func<IQueryable<Booking>, IQueryable<Booking>>>()))
+                .ReturnsAsync(new List<Booking>());
+            
+            // Act
+            await _service.GetBookingsByDateRangeAsync(DateTime.Now, DateTime.Now.AddDays(1));
+            
+            // Assert
+             _mockBookingRepo.Verify(r => r.GetAllAsync(It.IsAny<Expression<Func<Booking, bool>>>(), It.IsAny<Func<IQueryable<Booking>, IQueryable<Booking>>>()), Times.Once);
+        }
 
-        // Act
-        var result = await _service.GetBookingsByUserIdAsync(userId);
+        [Fact]
+        public async Task GetBookingsByRoomTypeIdAsync_ShouldReturnList()
+        {
+             _mockBookingRepo.Setup(r => r.GetAllAsync(It.IsAny<Expression<Func<Booking, bool>>>(), It.IsAny<Func<IQueryable<Booking>, IQueryable<Booking>>>()))
+                .ReturnsAsync(new List<Booking>());
+            
+             await _service.GetBookingsByRoomTypeIdAsync(1);
+             
+             _mockBookingRepo.Verify(r => r.GetAllAsync(It.IsAny<Expression<Func<Booking, bool>>>(), It.IsAny<Func<IQueryable<Booking>, IQueryable<Booking>>>()), Times.Once);
+        }
 
-        // Assert
-        Assert.NotNull(result);
-        Assert.All(result, dto => Assert.Equal(userId, dto.UserId));
+        [Fact]
+        public async Task GetBookingsByHotelIdAsync_ShouldReturnList()
+        {
+             _mockBookingRepo.Setup(r => r.GetAllAsync(It.IsAny<Expression<Func<Booking, bool>>>(), It.IsAny<Func<IQueryable<Booking>, IQueryable<Booking>>>()))
+                .ReturnsAsync(new List<Booking>());
+            
+             await _service.GetBookingsByHotelIdAsync(1);
+             
+             _mockBookingRepo.Verify(r => r.GetAllAsync(It.IsAny<Expression<Func<Booking, bool>>>(), It.IsAny<Func<IQueryable<Booking>, IQueryable<Booking>>>()), Times.Once);
+        }
+
+        #endregion
+
+        #region Helper for Async Queryable
+        
+        private Mock<IQueryable<T>> MockAsyncQueryable<T>(IQueryable<T> data) where T : class
+        {
+            var mockSet = new Mock<IQueryable<T>>();
+            mockSet.As<IAsyncEnumerable<T>>()
+                .Setup(m => m.GetAsyncEnumerator(It.IsAny<CancellationToken>()))
+                .Returns(new TestAsyncEnumerator<T>(data.GetEnumerator()));
+        
+            mockSet.As<IQueryable<T>>()
+                .Setup(m => m.Provider)
+                .Returns(new TestAsyncQueryProvider<T>(data.Provider));
+        
+            mockSet.As<IQueryable<T>>().Setup(m => m.Expression).Returns(data.Expression);
+            mockSet.As<IQueryable<T>>().Setup(m => m.ElementType).Returns(data.ElementType);
+            mockSet.As<IQueryable<T>>().Setup(m => m.GetEnumerator()).Returns(data.GetEnumerator());
+        
+            return mockSet;
+        }
+        
+        #endregion
     }
+    
 
-    [Fact]
-    public async Task CheckRoomTypeAvailabilityAsync_AvailableRoom_ReturnsTrue()
+    internal class TestAsyncQueryProvider<TEntity> : IAsyncQueryProvider
     {
-        // Arrange
-        var roomTypeId = 1;
-        var hotelId = 1;
-        var checkInDate = DateTime.UtcNow.Date.AddDays(1);
-        var checkOutDate = DateTime.UtcNow.Date.AddDays(3);
-        
-        var roomType = _fixture.Build<RoomType>()
-            .With(rt => rt.Id, roomTypeId)
-            .With(rt => rt.HotelId, hotelId)
-            .Create();
-        
-        _roomTypeRepoMock.Setup(x => x.GetByIdAsync(roomTypeId))
-            .ReturnsAsync(roomType);
-            
-        _roomTypeRepoMock.Setup(x => x.CountAsync(
-                It.IsAny<System.Linq.Expressions.Expression<Func<RoomType, bool>>>(),
-                It.IsAny<Func<IQueryable<RoomType>, IIncludableQueryable<RoomType, object>>>()))
-            .ReturnsAsync(2); // 2 rooms of this type
-            
-        _bookingRepoMock.Setup(x => x.GetQueryable())
-            .Returns(new List<Booking>
-            {
-                // Only 1 booking for this room type in the given period
-                new Booking 
-                { 
-                    RoomTypeId = roomTypeId,
-                    CheckInDate = checkInDate,
-                    CheckOutDate = checkOutDate,
-                    Status = (int)BookingStatus.Confirmed
-                }
-            }.AsQueryable());
-
-        // Act
-        var result = await _service.CheckRoomTypeAvailabilityAsync(
-            roomTypeId, hotelId, checkInDate, checkOutDate);
-
-        // Assert
-        Assert.True(true); // Should be available since we have 2 rooms but only 1 booking
+        private readonly IQueryProvider _inner;
+    
+        internal TestAsyncQueryProvider(IQueryProvider inner)
+        {
+            _inner = inner;
+        }
+    
+        public IQueryable CreateQuery(Expression expression)
+        {
+            return new TestAsyncEnumerable<TEntity>(expression);
+        }
+    
+        public IQueryable<TElement> CreateQuery<TElement>(Expression expression)
+        {
+            return new TestAsyncEnumerable<TElement>(expression);
+        }
+    
+        public object Execute(Expression expression)
+        {
+            return _inner.Execute(expression);
+        }
+    
+        public TResult Execute<TResult>(Expression expression)
+        {
+            return _inner.Execute<TResult>(expression);
+        }
+    
+        public TResult ExecuteAsync<TResult>(Expression expression, CancellationToken cancellationToken = default)
+        {
+            var expectedResultType = typeof(TResult).GetGenericArguments()[0];
+            var executionResult = typeof(IQueryProvider)
+                                 .GetMethod(
+                                     name: nameof(IQueryProvider.Execute),
+                                     genericParameterCount: 1,
+                                     types: new[] { typeof(Expression) }
+                                 )
+                                 .MakeGenericMethod(expectedResultType)
+                                 .Invoke(this, new[] { expression });
+    
+            return (TResult)typeof(Task).GetMethod(nameof(Task.FromResult))
+                .MakeGenericMethod(expectedResultType)
+                .Invoke(null, new[] { executionResult });
+        }
     }
-
-    [Fact]
-    public async Task CheckRoomTypeAvailabilityAsync_NoAvailableRooms_ReturnsFalse()
+    
+    internal class TestAsyncEnumerable<T> : EnumerableQuery<T>, IAsyncEnumerable<T>, IQueryable<T>
     {
-        // Arrange
-        var roomTypeId = 1;
-        var hotelId = 1;
-        var checkInDate = DateTime.UtcNow.Date.AddDays(1);
-        var checkOutDate = DateTime.UtcNow.Date.AddDays(3);
+        public TestAsyncEnumerable(IEnumerable<T> enumerable) : base(enumerable) { }
+        public TestAsyncEnumerable(Expression expression) : base(expression) { }
+    
+        public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+        {
+            return new TestAsyncEnumerator<T>(this.AsEnumerable().GetEnumerator());
+        }
+    
+        IQueryProvider IQueryable.Provider => new TestAsyncQueryProvider<T>(this);
+    }
+    
+    internal class TestAsyncEnumerator<T> : IAsyncEnumerator<T>
+    {
+        private readonly IEnumerator<T> _inner;
+    
+        public TestAsyncEnumerator(IEnumerator<T> inner)
+        {
+            _inner = inner;
+        }
+    
+        public ValueTask DisposeAsync()
+        {
+            _inner.Dispose();
+            return ValueTask.CompletedTask;
+        }
+    
+        public ValueTask<bool> MoveNextAsync()
+        {
+            return ValueTask.FromResult(_inner.MoveNext());
+        }
         
-        var roomType = _fixture.Build<RoomType>()
-            .With(rt => rt.Id, roomTypeId)
-            .With(rt => rt.HotelId, hotelId)
-            .Create();
-        
-        _roomTypeRepoMock.Setup(x => x.GetByIdAsync(roomTypeId))
-            .ReturnsAsync(roomType);
-            
-        _roomTypeRepoMock.Setup(x => x.CountAsync(
-                It.IsAny<System.Linq.Expressions.Expression<Func<RoomType, bool>>>(),
-                It.IsAny<Func<IQueryable<RoomType>, IIncludableQueryable<RoomType, object>>>()))
-            .ReturnsAsync(1); // Only 1 room of this type
-            
-        _bookingRepoMock.Setup(x => x.GetQueryable())
-            .Returns(new List<Booking>
-            {
-                // Already 1 booking for this room type in the given period
-                new Booking 
-                { 
-                    RoomTypeId = roomTypeId,
-                    CheckInDate = checkInDate,
-                    CheckOutDate = checkOutDate,
-                    Status = (int)BookingStatus.Confirmed
-                }
-            }.AsQueryable());
-
-        // Act
-        var result = await _service.CheckRoomTypeAvailabilityAsync(
-            roomTypeId, hotelId, checkInDate, checkOutDate);
-
-        // Assert
-        Assert.False(result); // Should not be available since we have 1 room and 1 booking
+        public T Current => _inner.Current;
     }
 }
