@@ -1,0 +1,192 @@
+:root {
+  --bg: #f6f7f9;
+  --card: #ffffff;
+  --text: #1c2530;
+  --muted: #6b7684;
+  --accent: #0f6fff;
+  --accent-dark: #0b57cf;
+  --border: #e3e7ec;
+  --ok: #1a9e56;
+  --warn: #b98307;
+  --err: #d43c3c;
+  --radius: 12px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font: 15px/1.55 -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding: 12px 28px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.brand { font-size: 18px; font-weight: 700; cursor: pointer; }
+.topbar nav { display: flex; gap: 18px; flex: 1; }
+.topbar nav a { cursor: pointer; color: var(--muted); font-weight: 500; }
+.topbar nav a:hover { color: var(--accent); }
+
+.userbox { display: flex; gap: 10px; align-items: center; }
+.userbox .who { color: var(--muted); }
+
+.container { max-width: 1080px; margin: 24px auto; padding: 0 20px; }
+
+button, .btn {
+  font: inherit;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+}
+button:hover { background: var(--accent-dark); }
+button.ghost { background: transparent; color: var(--accent); border: 1px solid var(--border); }
+button.ghost:hover { border-color: var(--accent); background: #fff; }
+button.danger { background: var(--err); }
+button:disabled { opacity: .5; cursor: default; }
+
+input, select {
+  font: inherit;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text);
+}
+input:focus, select:focus { outline: 2px solid #bcd7ff; border-color: var(--accent); }
+
+.searchbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  background: var(--card);
+  padding: 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  margin-bottom: 22px;
+}
+.searchbar input, .searchbar select { flex: 1; min-width: 130px; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+  gap: 18px;
+}
+
+.hotel-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  cursor: pointer;
+  transition: box-shadow .15s, transform .15s;
+}
+.hotel-card:hover { box-shadow: 0 8px 24px rgba(16,38,73,.10); transform: translateY(-2px); }
+.hotel-card img { width: 100%; height: 170px; object-fit: cover; display: block; background: #dde3ea; }
+.hotel-card .body { padding: 14px 16px 16px; }
+.hotel-card h3 { margin: 0 0 4px; font-size: 17px; }
+.hotel-card .loc { color: var(--muted); font-size: 13px; }
+.stars { color: #f5a623; font-weight: 700; }
+.price { margin-top: 8px; font-weight: 700; }
+.price small { color: var(--muted); font-weight: 400; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.chip {
+  font-size: 12px;
+  background: #eef4ff;
+  color: #2451a6;
+  padding: 2px 9px;
+  border-radius: 999px;
+}
+
+.page-head { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+.page-head h2 { margin: 0; flex: 1; }
+.back { cursor: pointer; color: var(--muted); }
+
+.photos { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px; border-radius: var(--radius); overflow: hidden; margin-bottom: 18px; }
+.photos img { width: 100%; height: 150px; object-fit: cover; background: #dde3ea; }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  margin-bottom: 16px;
+}
+
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); }
+th { color: var(--muted); font-weight: 600; font-size: 12.5px; text-transform: uppercase; letter-spacing: .03em; }
+
+.badge { padding: 3px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 600; }
+.b1 { background: #fff4d6; color: var(--warn); }   /* ожидает */
+.b2 { background: #e0edff; color: #2451a6; }       /* активно */
+.b3 { background: #dff5e7; color: var(--ok); }     /* подтверждено */
+.b4 { background: #eceef1; color: var(--muted); }  /* отменено */
+.b5 { background: #e8e6f8; color: #5b4bb7; }       /* завершено */
+
+.booking-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+
+.modal {
+  position: fixed; inset: 0;
+  background: rgba(18,26,38,.45);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 50;
+}
+.modal.hidden { display: none; }
+.modal-card {
+  background: #fff;
+  border-radius: var(--radius);
+  padding: 26px 28px;
+  width: min(420px, 92vw);
+  position: relative;
+}
+.modal-card h3 { margin: 0 0 14px; }
+.modal-card .row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+.modal-card .row label { font-size: 13px; color: var(--muted); }
+.modal-card input { width: 100%; }
+.tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+.tabs button { background: #eef1f5; color: var(--muted); }
+.tabs button.active { background: var(--accent); color: #fff; }
+.close {
+  position: absolute; top: 10px; right: 12px;
+  background: none; color: var(--muted); font-size: 22px; padding: 0 6px;
+}
+
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+  background: #22303f; color: #fff; padding: 11px 20px; border-radius: 10px;
+  opacity: 0; transition: .25s; z-index: 60; max-width: 90vw;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.err { background: var(--err); }
+
+.empty { text-align: center; color: var(--muted); padding: 60px 0; }
+.muted { color: var(--muted); }
+.mt { margin-top: 14px; }
+.row-flex { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+.row-flex .field { display: flex; flex-direction: column; gap: 4px; }
+.row-flex .field label { font-size: 12.5px; color: var(--muted); }
+
+/* переключатель языка */
+select.lang {
+  padding: 5px 8px;
+  font-size: 13px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--muted);
+  cursor: pointer;
+}

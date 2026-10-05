@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+          <!-- Покрытие меряется по бизнес-логике: DTO и POCO-сущности исключены -->
+          <Exclude>[BookingSystem.Domain]*.DTOs.*,[BookingSystem.Application]*.DTOs.*,[BookingSystem.Domain]BookingSystem.Domain.Entities.*,[BookingSystem.Domain]BookingSystem.Domain.Other.*,[BookingSystem.Domain]BookingSystem.Domain.Interfaces.*,[BookingSystem.Application]BookingSystem.Application.Interfaces.*,[BookingSystem.Domain]BookingSystem.Domain.Enums.*</Exclude>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

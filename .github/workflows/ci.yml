@@ -1,0 +1,139 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, feature/coursework]
+  pull_request:
+    branches: [main, master, feature/coursework]
+
+jobs:
+  lint:
+    name: Линтеры
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Установка .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: dotnet format (whitespace)
+        run: dotnet format BookingSystem.API/BookingSystem.API.sln whitespace --verify-no-changes
+
+      - name: ESLint (frontend)
+        run: npx --yes eslint@9 "BookingSystem.API/BookingSystem.API/wwwroot/app.js"
+
+  test:
+    name: Тесты и покрытие (≥80%)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: my_user
+          POSTGRES_PASSWORD: 1111
+          POSTGRES_DB: postgres
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U my_user"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 15
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 15
+      mongo:
+        image: mongo:7
+        env:
+          MONGO_INITDB_ROOT_USERNAME: admin
+          MONGO_INITDB_ROOT_PASSWORD: password123
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 15
+    env:
+      BOOKING_TEST_CONNECTION: "Host=localhost;Port=5433;Username=my_user;Password=1111;Database=postgres"
+      TEST_REDIS: "localhost:6379"
+      TEST_MONGO: "mongodb://admin:password123@localhost:27017"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Установка .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Восстановление и сборка
+        run: |
+          dotnet restore BookingSystem.API/BookingSystem.API.sln
+          dotnet build BookingSystem.API/BookingSystem.API.sln -c Release --no-restore
+
+      - name: Юнит-тесты
+        run: >
+          dotnet test BookingSystem.API/BookingSystem.Tests
+          -c Release --no-restore
+          --settings BookingSystem.API/coverage.runsettings
+          --collect:"XPlat Code Coverage" --results-directory ./coverage
+
+      - name: Интеграционные тесты (PostgreSQL)
+        run: >
+          dotnet test BookingSystem.API/BookingSystem.IntegrationTests
+          -c Release --no-restore
+          --settings BookingSystem.API/coverage.runsettings
+          --collect:"XPlat Code Coverage" --results-directory ./coverage
+
+      - name: API-тесты (всё приложение)
+        run: >
+          dotnet test BookingSystem.API/BookingSystem.ApiTests
+          -c Release --no-restore
+          --settings BookingSystem.API/coverage.runsettings
+          --collect:"XPlat Code Coverage" --results-directory ./coverage
+
+      - name: Отчёт покрытия
+        run: |
+          dotnet tool install --global dotnet-reportgenerator-globaltool
+          reportgenerator -reports:"./coverage/**/coverage.cobertura.xml" \
+            -targetdir:./coverage/report -reporttypes:"Html;TextSummary"
+
+      - name: Порог покрытия 80%
+        run: |
+          LINE=$(grep -oP 'Line coverage: \K[0-9.]+' ./coverage/report/Summary.txt)
+          echo "Line coverage: $LINE%"
+          AWK_NUM=$(echo "$LINE" | awk '{printf "%.1f", $1}')
+          if awk "BEGIN {exit !($AWK_NUM >= 80.0)}"; then
+            echo "Гейт пройден: $AWK_NUM% ≥ 80%"
+          else
+            echo "Гейт НЕ пройден: $AWK_NUM% < 80%"
+            exit 1
+          fi
+
+      - name: Публикация отчёта
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: ./coverage/report
+
+  docker:
+    name: Docker-образ
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Сборка образа
+        run: docker build -f BookingSystem.API/BookingSystem.API/Dockerfile BookingSystem.API/
+
+      - name: Валидация docker-compose
+        run: docker compose config -q

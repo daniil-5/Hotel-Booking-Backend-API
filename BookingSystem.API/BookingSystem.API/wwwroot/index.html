@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BookingSystem — бронирование отелей</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand" onclick="go('hotels')">🏨 BookingSystem</div>
+    <nav>
+      <a onclick="go('hotels')" id="nav-hotels">Отели</a>
+      <a onclick="go('bookings')" id="nav-bookings" class="auth-only">Мои брони</a>
+      <a onclick="go('admin')" id="nav-admin" class="admin-only">Админ</a>
+    </nav>
+    <div class="userbox" id="userbox"></div>
+  </header>
+
+  <main id="view" class="container"></main>
+
+  <div id="toast" class="toast"></div>
+
+  <div id="modal" class="modal hidden">
+    <div class="modal-card">
+      <button class="close" onclick="closeModal()">×</button>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
