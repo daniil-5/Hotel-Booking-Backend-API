@@ -18,7 +18,10 @@ jobs:
         with:
           dotnet-version: 9.0.x
 
-      - name: dotnet format (whitespace)
+      - name: dotnet format (применить)
+        run: dotnet format BookingSystem.API/BookingSystem.API.sln whitespace
+
+      - name: dotnet format (проверить)
         run: dotnet format BookingSystem.API/BookingSystem.API.sln whitespace --verify-no-changes
 
       - name: ESLint (frontend)
@@ -108,13 +111,12 @@ jobs:
 
       - name: Порог покрытия 80%
         run: |
-          LINE=$(grep -oP 'Line coverage: \K[0-9.]+' ./coverage/report/Summary.txt)
+          LINE=$(sed -n 's/.*Line coverage: \([0-9.]*\)%.*/\1/p' ./coverage/report/Summary.txt)
           echo "Line coverage: $LINE%"
-          AWK_NUM=$(echo "$LINE" | awk '{printf "%.1f", $1}')
-          if awk "BEGIN {exit !($AWK_NUM >= 80.0)}"; then
-            echo "Гейт пройден: $AWK_NUM% ≥ 80%"
+          if awk -v n="$LINE" 'BEGIN {exit !(n >= 80.0)}'; then
+            echo "Гейт пройден: $LINE% >= 80%"
           else
-            echo "Гейт НЕ пройден: $AWK_NUM% < 80%"
+            echo "Гейт НЕ пройден: $LINE% < 80%"
             exit 1
           fi
 
