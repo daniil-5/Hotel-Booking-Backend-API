@@ -102,7 +102,7 @@ jobs:
           dotnet test BookingSystem.API/BookingSystem.ApiTests
           -c Release --no-restore
           --settings BookingSystem.API/coverage.runsettings
-          --collect:"XPlat Code Coverage" --results-directory ./coverage
+          --collect:"XPlat Code Coverage" --results-directory ./coverage-first
           --logger "console;verbosity=normal"
         continue-on-error: true
 
@@ -120,6 +120,9 @@ jobs:
         run: |
           echo "Повторный прогон тоже упал — см. лог выше"
           exit 1
+      - name: Очистка первого прогона
+        if: steps.apitests.outcome == 'failure'
+        run: rm -rf ./coverage-first
 
       - name: Отчёт покрытия
         run: |
