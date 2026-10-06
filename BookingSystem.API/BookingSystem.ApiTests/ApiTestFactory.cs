@@ -32,7 +32,19 @@ public sealed class ApiTestFactory : WebApplicationFactory<Program>
         builder.UseSetting("MongoDbConnection",
             Environment.GetEnvironmentVariable("TEST_MONGO") ?? "mongodb://admin:password123@localhost:27017");
         builder.UseSetting("Logging:LogLevel:Default", "Warning");
-        builder.UseSetting("Logging__Serilog__MinimumLevel", "Warning");
+
+        // appsettings.json исключён из репозитория .gitignore-ом — тестовое
+        // окружение задаёт все необходимые настройки явно
+        builder.UseSetting("JWT:Secret", "ci_test_secret_key_at_least_32_chars_long");
+        builder.UseSetting("JWT:Issuer", "BookingSystem");
+        builder.UseSetting("JWT:Audience", "BookingSystemUsers");
+        builder.UseSetting("JWT:DurationInDays", "7");
+        builder.UseSetting("MongoDbSettings:DatabaseName", "BookingSystem_Logs");
+        builder.UseSetting("MongoDbSettings:UserActionsCollectionName", "UserActionAudits");
+        builder.UseSetting("MongoDbSettings:LogsTtlDays", "1");
+        builder.UseSetting("CloudinarySettings:CloudName", "test-cloud");
+        builder.UseSetting("CloudinarySettings:ApiKey", "000000000000000");
+        builder.UseSetting("CloudinarySettings:ApiSecret", "test-secret");
     }
 
     /// Счётчики неудачных входов из прошлых прогонов не должны блокировать тесты
