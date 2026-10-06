@@ -14,13 +14,11 @@ public sealed class ApiTestFactory : WebApplicationFactory<Program>
 {
     public const string MasterConnection =
         "Host=localhost;Port=5433;Username=my_user;Password=1111;Database=postgres";
-    public const string AppConnection =
-        "Host=localhost;Port=5433;Username=my_user;Password=1111;Database=Booking_db";
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         var master = Environment.GetEnvironmentVariable("BOOKING_TEST_CONNECTION") ?? MasterConnection;
-        var app = master.Replace("Database=postgres", "Database=Booking_db");
+        var app = master.Replace("Database=postgres", "Database=booking_db");
 
         ResetDatabase(master);
 
@@ -28,11 +26,12 @@ public sealed class ApiTestFactory : WebApplicationFactory<Program>
             Environment.GetEnvironmentVariable("TEST_REDIS") ?? "localhost:6379");
 
         builder.UseEnvironment("Testing");
-        builder.UseSetting("ConnectionStrings__DefaultConnection", app);
-        builder.UseSetting("ConnectionStrings__Redis",
+        builder.UseSetting("ConnectionStrings:DefaultConnection", app);
+        builder.UseSetting("ConnectionStrings:Redis",
             Environment.GetEnvironmentVariable("TEST_REDIS") ?? "localhost:6379");
         builder.UseSetting("MongoDbConnection",
             Environment.GetEnvironmentVariable("TEST_MONGO") ?? "mongodb://admin:password123@localhost:27017");
+        builder.UseSetting("Logging:LogLevel:Default", "Warning");
         builder.UseSetting("Logging__Serilog__MinimumLevel", "Warning");
     }
 
@@ -67,7 +66,7 @@ public sealed class ApiTestFactory : WebApplicationFactory<Program>
 
         var schema = File.ReadAllText(FindFile("01_schema.sql"));
         var seed = File.ReadAllText(FindFile("02_seed.sql"));
-        using (var conn = new NpgsqlConnection(master.Replace("Database=postgres", "Database=Booking_db")))
+        using (var conn = new NpgsqlConnection(master.Replace("Database=postgres", "Database=booking_db")))
         {
             conn.Open();
             conn.Execute(schema);

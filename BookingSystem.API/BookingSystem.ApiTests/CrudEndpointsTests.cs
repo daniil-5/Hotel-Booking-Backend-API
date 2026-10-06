@@ -128,7 +128,8 @@ public class CrudEndpointsTests : ApiTestBase
     {
         var staff = await AsManagerAsync();
         var photos = await GetJsonAsync(staff, "/api/hotelphotos/hotel/1");
-        Assert.True(photos.GetArrayLength() >= 2);
+        Assert.True(photos.GetArrayLength() >= 2,
+            $"фото у отеля 1: {photos.GetArrayLength()}, тело: {photos.GetRawText()[..Math.Min(300, photos.GetRawText().Length)]}");
         var id = photos[0].GetProperty("id").GetInt32();
 
         var one = await GetJsonAsync(Client, $"/api/hotelphotos/{id}");
