@@ -29,7 +29,7 @@ public sealed class ApiTestFactory : WebApplicationFactory<Program>
         builder.UseSetting("ConnectionStrings:DefaultConnection", app);
         builder.UseSetting("ConnectionStrings:Redis",
             Environment.GetEnvironmentVariable("TEST_REDIS") ?? "localhost:6379");
-        builder.UseSetting("MongoDbConnection",
+        builder.UseSetting("ConnectionStrings:MongoDbConnection",
             Environment.GetEnvironmentVariable("TEST_MONGO") ?? "mongodb://admin:password123@localhost:27017");
         builder.UseSetting("Logging:LogLevel:Default", "Warning");
 
