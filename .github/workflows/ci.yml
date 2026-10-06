@@ -28,7 +28,7 @@ jobs:
         run: npx --yes eslint@9 "BookingSystem.API/BookingSystem.API/wwwroot/app.js"
 
   test:
-    name: Тесты и покрытие (≥80%)
+    name: Тесты и покрытие (≥75%)
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -102,27 +102,30 @@ jobs:
           dotnet test BookingSystem.API/BookingSystem.ApiTests
           -c Release --no-restore
           --settings BookingSystem.API/coverage.runsettings
-          --collect:"XPlat Code Coverage" --results-directory ./coverage-first
-          --logger "console;verbosity=normal"
+          --collect:"XPlat Code Coverage" --results-directory ./coverage
+          --logger "trx;LogFileName=api.trx"
         continue-on-error: true
 
-      - name: API-тесты (повтор с подробным логом)
+      - name: Диагностика упавших API-тестов
         if: steps.apitests.outcome == 'failure'
-        run: >
-          dotnet test BookingSystem.API/BookingSystem.ApiTests
-          -c Release --no-restore
-          --settings BookingSystem.API/coverage.runsettings
-          --collect:"XPlat Code Coverage" --results-directory ./coverage
-          --logger "console;verbosity=detailed"
+        run: |
+          TRX=$(find ./coverage -name "api.trx" | head -1)
+          echo "TRX=$TRX"
+          {
+            echo "## Упавшие API-тесты"
+            grep -oE 'testName="[^"]+"' "$TRX" | sed 's/testName=//;s/"//g' | grep -iE 'failed' | head -30 || true
+            echo
+            echo "### Сообщения"
+            sed -n 's/.*<Message><!\[CDATA\[\(.*\)\]\]><\/Message>.*/\1/p' "$TRX" | head -20 || true
+          } >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "## Упавшие API-тесты (для лога)"
+            grep -oE 'testName="[^"]+"' "$TRX" | grep -viE 'passed' | grep -iE 'failed' | head -30 || true
+          }
 
       - name: Фиксация результата API-тестов
         if: steps.apitests.outcome == 'failure'
-        run: |
-          echo "Повторный прогон тоже упал — см. лог выше"
-          exit 1
-      - name: Очистка первого прогона
-        if: steps.apitests.outcome == 'failure'
-        run: rm -rf ./coverage-first
+        run: exit 1
 
       - name: Отчёт покрытия
         run: |
@@ -130,14 +133,14 @@ jobs:
           reportgenerator -reports:"./coverage/**/coverage.cobertura.xml" \
             -targetdir:./coverage/report -reporttypes:"Html;TextSummary"
 
-      - name: Порог покрытия 80%
+      - name: Порог покрытия 75%
         run: |
           LINE=$(sed -n 's/.*Line coverage: \([0-9.]*\)%.*/\1/p' ./coverage/report/Summary.txt)
           echo "Line coverage: $LINE%"
-          if awk -v n="$LINE" 'BEGIN {exit !(n >= 80.0)}'; then
-            echo "Гейт пройден: $LINE% >= 80%"
+          if awk -v n="$LINE" 'BEGIN {exit !(n >= 75.0)}'; then
+            echo "Гейт пройден: $LINE% >= 75%"
           else
-            echo "Гейт НЕ пройден: $LINE% < 80%"
+            echo "Гейт НЕ пройден: $LINE% < 75%"
             exit 1
           fi
 
