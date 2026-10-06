@@ -111,18 +111,25 @@ jobs:
         run: |
           TRX=$(find ./coverage -name "api.trx" | head -1)
           echo "TRX=$TRX"
-          {
-            echo "## Упавшие API-тесты"
-            grep -oE 'testName="[^"]+"' "$TRX" | sed 's/testName=//;s/"//g' | grep -iE 'failed' | head -30 || true
-            echo
-            echo "### Сообщения"
-            sed -n 's/.*<Message><!\[CDATA\[\(.*\)\]\]><\/Message>.*/\1/p' "$TRX" | head -20 || true
-          } >> "$GITHUB_STEP_SUMMARY"
-          {
-            echo "## Упавшие API-тесты (для лога)"
-            grep -oE 'testName="[^"]+"' "$TRX" | grep -viE 'passed' | grep -iE 'failed' | head -30 || true
-          }
-
+          python3 - "$TRX" <<'PYEOF'
+          import sys, re, html
+          try:
+              content = open(sys.argv[1], encoding='utf-8').read()
+          except Exception as e:
+              print(f"::error::не удалось прочитать trx: {e}")
+              sys.exit(0)
+          for m in re.finditer(r'<UnitTestResult[^>]*testName="([^"]*)"[^>]*outcome="Failed"[^>]*>(.*?)</UnitTestResult>', content, re.S):
+              name = html.unescape(m.group(1))
+              msg = re.search(r'<Message>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?</Message>', m.group(2), re.S)
+              stack = re.search(r'<StackTrace>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?</StackTrace>', m.group(2), re.S)
+              text = (msg.group(1) if msg else 'без сообщения')[:400].replace('\n', ' ')
+              print(f"::error::FAIL {name} :: {text}")
+              if stack:
+                  first = stack.group(1).strip().split('\n')[0][:200]
+                  print(f"::error::  at {first}")
+          if 'outcome="Failed"' not in content:
+              print("::warning::в trx нет Failed-результатов — возможно, тесты не запустились")
+          PYEOF
       - name: Фиксация результата API-тестов
         if: steps.apitests.outcome == 'failure'
         run: exit 1
